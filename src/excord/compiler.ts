@@ -71,6 +71,8 @@ async function atomicWrite(path: string, value: string) {
 export class LocalPluginCompiler {
     private pending: Promise<LocalPluginSnapshot> | undefined;
     private usedArtifacts = new Set<string>();
+    private stopCompiler: (() => void) | undefined;
+    private disposed = false;
 
     constructor(
         readonly pluginsDirectory: string,
@@ -79,7 +81,14 @@ export class LocalPluginCompiler {
     ) {}
 
     prepare(): Promise<LocalPluginSnapshot> {
+        if (this.disposed) return Promise.reject(new Error("The local plugin compiler has stopped."));
         return this.pending ??= this.compileAll().finally(() => { this.pending = undefined; });
+    }
+
+    shutdown() {
+        this.disposed = true;
+        this.stopCompiler?.();
+        this.stopCompiler = undefined;
     }
 
     private async compileAll(): Promise<LocalPluginSnapshot> {
@@ -134,7 +143,9 @@ export class LocalPluginCompiler {
         }
 
         // Loading the compiler and its native executable is deferred until a plugin actually changes.
-        const { build } = await import("esbuild");
+        const { build, stop } = await import("esbuild");
+        if (this.disposed) throw new Error("The local plugin compiler has stopped.");
+        this.stopCompiler = stop;
         const rawFiles: Plugin = {
             name: "excord-file-imports",
             setup(ctx) {

@@ -13,6 +13,7 @@ import type { LocalPluginSnapshot, PerformanceSnapshot, PluginIssue, RuntimeModu
 const manifest: RuntimeModuleManifest = JSON.parse(readFileSync(join(STATIC_DIR, "runtime/modules.json"), "utf8"));
 export const localPluginsDirectory = join(DATA_DIR, "plugins");
 const compiler = new LocalPluginCompiler(localPluginsDirectory, join(DATA_DIR, "plugin-cache"), manifest);
+app.on("will-quit", () => compiler.shutdown());
 const requireNative = createRequire(__filename);
 // spawn() cannot execute a path inside ASAR. Point esbuild at its unpacked binary.
 if (STATIC_DIR.includes(".asar") && !process.env.ESBUILD_BINARY_PATH) {

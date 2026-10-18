@@ -25,16 +25,19 @@ await writeFile(join(plugin, "native.ts"), 'import { SETTINGS_DIR } from "@main/
 const environment = Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined));
 delete environment.ELECTRON_RUN_AS_NODE;
 environment.EXCORD_USER_DATA_DIR = profile;
+console.log(`[smoke] Launching Electron on ${process.platform}/${process.arch}`);
+let stopHungApplication = () => {};
+const deadline = setTimeout(() => {
+    console.error("[smoke] The Electron test exceeded its three-minute deadline");
+    stopHungApplication();
+    process.exit(1);
+}, 180000);
+deadline.unref();
 const application = await _electron.launch({ executablePath: require("electron"),
     args: [...(process.platform === "linux" ? ["--no-sandbox", "--disable-gpu"] : []), resolve(process.env.EXCORD_SMOKE_APP ?? (process.argv.includes("--packaged") ? packagedApp : "."))],
     env: environment, timeout: 30000 });
 console.log("[smoke] Electron launched");
-const deadline = setTimeout(() => {
-    console.error("[smoke] The Electron test exceeded its three-minute deadline");
-    application.process().kill();
-    process.exitCode = 1;
-}, 180000);
-deadline.unref();
+stopHungApplication = () => { application.process().kill(); };
 const errors: string[] = [];
 let telemetryBlocks = 0;
 let mainOutput = "";
@@ -116,10 +119,13 @@ try {
     throw error;
 } finally {
     console.log("[smoke] Closing Electron");
-    const shutdown = setTimeout(() => application.process().kill(), 10000);
+    let forcedShutdown = false;
+    const shutdown = setTimeout(() => { forcedShutdown = true; application.process().kill(); }, 10000);
     shutdown.unref();
     await application.close().catch(() => {});
+    console.log("[smoke] Electron closed");
     clearTimeout(shutdown);
     clearTimeout(deadline);
     await rm(profile, { recursive: true, force: true, maxRetries: 5 });
+    assert.equal(forcedShutdown, false, "Electron must quit without a forced process kill");
 }
