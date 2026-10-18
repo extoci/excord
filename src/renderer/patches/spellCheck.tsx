@@ -52,7 +52,7 @@ addContextMenuPatch("textarea-context", children => {
     const settings = useSettings();
     const spellCheckLanguages = (settings.spellCheckLanguages ??= [...new Set(navigator.languages)]);
 
-    const pasteSectionIndex = children.findIndex(c => c?.props?.children?.some?.(c => c?.props?.id === "paste"));
+    const pasteSectionIndex = children.findIndex(c => c?.props?.children?.some?.((child: { props?: { id?: string } }) => child?.props?.id === "paste"));
 
     children.splice(
         pasteSectionIndex === -1 ? children.length : pasteSectionIndex,

@@ -45,8 +45,8 @@ const bridge: Plugin = {
             };
         });
         ctx.onLoad({ filter: /[/\\]src[/\\]Vencord\.ts$/ }, async ({ path }) => ({
-            contents: `import { installExcordPlugins } from ${JSON.stringify(join(root, "src/excord/runtime.ts"))};\n`
-                + (await readFile(path, "utf8")).replace("initPluginManager();", "installExcordPlugins();\ninitPluginManager();"),
+            contents: (await readFile(path, "utf8")).replace("initPluginManager();", "installExcordPlugins();\ninitPluginManager();")
+                + `\nimport { installExcordPlugins } from ${JSON.stringify(join(root, "src/excord/runtime.ts"))};\n`,
             loader: "ts", resolveDir: dirname(path)
         }));
     }

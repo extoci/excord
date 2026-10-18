@@ -29,7 +29,7 @@ export function ControlCenter() {
     return <section className="excord-control" aria-label="Excord control center">
         <header className="excord-header">
             <div className="excord-wordmark"><span className="excord-mark" aria-hidden="true">e</span><span>Excord</span><span className="excord-version">v{String(VesktopNative.app.getVersion())}</span></div>
-            <p>Your Discord. Your plugins.</p>
+            <p>Desktop settings and personal TypeScript plugins.</p>
         </header>
         <nav className="excord-tabs" aria-label="Excord settings">
             {(["plugins", "performance", "compatibility"] as const).map(item => <button key={item} aria-pressed={tab === item} onClick={() => setTab(item)}>{item === "plugins" ? "Local plugins" : item === "performance" ? "Performance" : "Compatibility"}</button>)}
@@ -37,7 +37,7 @@ export function ControlCenter() {
         {error && <div className="excord-message excord-error" role="alert">{error}</div>}
         {message && <div className="excord-message" role="status">{message}</div>}
         {tab === "plugins" && <>
-            <div className="excord-section-heading"><div><h2>A folder is a plugin.</h2><p>Edit its TypeScript, then refresh Excord.</p></div><button disabled={busy} onClick={() => void act(() => ExcordNative.openPluginsFolder())}>Open plugins folder</button></div>
+            <div className="excord-section-heading"><div><h2>Personal TypeScript plugins</h2><p>Edit a plugin folder, then refresh Excord.</p></div><button disabled={busy} onClick={() => void act(() => ExcordNative.openPluginsFolder())}>Open plugins folder</button></div>
             <div className="excord-card excord-create">
                 <form onSubmit={event => { event.preventDefault(); void act(async () => { await ExcordNative.createPlugin(name); setMessage(`Created ${name}. Edit index.ts, then refresh to load it.`); setName(""); }); }}>
                     <label htmlFor="excord-plugin-name">Create a personal plugin</label>
@@ -46,12 +46,12 @@ export function ControlCenter() {
                 </form>
             </div>
             <div className="excord-section-heading"><h3>Loaded folders <span className="excord-count">{diagnostics?.localPlugins.plugins.length ?? 0}</span></h3><button disabled={busy} onClick={() => void act(() => ExcordNative.refresh())}>Refresh Excord <kbd>{navigator.platform.includes("Mac") ? "⌘R" : "Ctrl+R"}</kbd></button></div>
-            {diagnostics?.localPlugins.plugins.length ? <div className="excord-plugin-list">{diagnostics.localPlugins.plugins.map(plugin => <div className="excord-card excord-plugin" key={plugin.folder}><div><h4>{plugin.folder}</h4><p>{plugin.nativePath ? "TypeScript + native module" : "TypeScript plugin"}</p></div><span className="excord-cache">{plugin.cacheHit ? "Cached" : `${plugin.durationMs.toFixed(0)} ms to compile`}</span></div>)}</div> : <div className="excord-empty"><span aria-hidden="true">&#123; &#125;</span><h3>Make something personal.</h3><p>Create your first plugin above, or copy a plugin folder into the plugins directory.</p></div>}
+            {diagnostics?.localPlugins.plugins.length ? <div className="excord-plugin-list">{diagnostics.localPlugins.plugins.map(plugin => <div className="excord-card excord-plugin" key={plugin.folder}><div><h4>{plugin.folder}</h4><p>{plugin.nativePath ? "TypeScript + native module" : "TypeScript plugin"}</p></div><span className="excord-cache">{plugin.cacheHit ? "Cached" : `${plugin.durationMs.toFixed(0)} ms to compile`}</span></div>)}</div> : <div className="excord-empty"><span aria-hidden="true">&#123; &#125;</span><h3>No local plugins loaded</h3><p>Create a plugin above, or copy a plugin folder into the plugins directory.</p></div>}
             {(diagnostics?.localPlugins.issues ?? []).map((issue, index) => <div className="excord-message excord-error" key={index}><strong>{issue.folder}</strong><pre>{issue.message}</pre></div>)}
             <p className="excord-note">The bundled Equicord catalog is in Discord Settings → Plugins. Enable, disable, and configure local plugins there too.</p>
         </>}
         {tab === "performance" && <>
-            <div className="excord-section-heading"><div><h2>Measure before changing.</h2><p>Process metrics are sampled when you open this page or click Update.</p></div><button onClick={() => void load()}>Update metrics</button></div>
+            <div className="excord-section-heading"><div><h2>Performance measurements</h2><p>Process metrics are sampled when you open this page or click Update.</p></div><button onClick={() => void load()}>Update metrics</button></div>
             <div className="excord-metrics">
                 <div className="excord-card"><span>Navigation startup</span><strong>{diagnostics?.startupMs == null ? "Pending" : `${(diagnostics.startupMs / 1000).toFixed(2)} s`}</strong><p>Process start to the first page load. This does not measure account readiness.</p></div>
                 <div className="excord-card"><span>Process working sets</span><strong>{memory === undefined ? "…" : `${memory.toFixed(0)} MiB`}</strong><p>Sum across Electron processes. Shared memory may appear in more than one process.</p></div>

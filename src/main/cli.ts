@@ -187,7 +187,7 @@ export function checkCommandLineForHelpOrVersion() {
     }
 
     for (const [name, def] of Object.entries(options)) {
-        const value = CommandLine.values[name];
+        const value = CommandLine.values[name as keyof typeof CommandLine.values];
         if (value == null) continue;
 
         if (typeof value !== def.type) {

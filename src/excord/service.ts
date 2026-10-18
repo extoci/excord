@@ -56,10 +56,13 @@ export async function prepareLocalPlugins() {
     }
 }
 
-export function refreshExcord(win = currentWindow): Promise<void> {
+export function refreshExcord(win = currentWindow, ignoreCache = false): Promise<void> {
     if (!win || win.isDestroyed()) return Promise.resolve();
     return refreshInProgress ??= prepareLocalPlugins().then(() => {
-        if (!win.isDestroyed()) win.webContents.reload();
+        if (!win.isDestroyed()) {
+            if (ignoreCache) win.webContents.reloadIgnoringCache();
+            else win.webContents.reload();
+        }
     }).finally(() => { refreshInProgress = undefined; });
 }
 
@@ -71,7 +74,7 @@ export function attachExcord(win: BrowserWindow) {
         const refresh = input.key === "F5" || ((input.control || input.meta) && !input.alt && input.key.toLowerCase() === "r");
         if (refresh) {
             event.preventDefault();
-            void refreshExcord(win).catch(error => console.error("[Excord] Refresh failed", error));
+            void refreshExcord(win, input.shift).catch(error => console.error("[Excord] Refresh failed", error));
         }
     });
 }

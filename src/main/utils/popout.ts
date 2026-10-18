@@ -79,7 +79,7 @@ function parseWindowFeatures(features: string) {
         if (ALLOWED_FEATURES.has(key)) features[key] = parseFeatureValue(value);
 
         return features;
-    }, {});
+    }, {} as Record<string, ReturnType<typeof parseFeatureValue>>);
 }
 
 export function createOrFocusPopup(key: string, features: string) {

@@ -1,7 +1,6 @@
 import { cpSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
 
-import { addAssetsCar } from "./addAssetsCar.mjs";
 
 async function copyArRPCBinaries(context) {
     const { electronPlatformName, arch, appOutDir } = context;
@@ -41,5 +40,4 @@ async function copyArRPCBinaries(context) {
 
 export default async function afterPack(context) {
     await copyArRPCBinaries(context);
-    await addAssetsCar(context);
 }

@@ -89,7 +89,7 @@ export class SettingsStore<T extends object> {
         this.store = this.makeProxy(value);
 
         if (pathToNotify) {
-            let v = value;
+            let v: unknown = value;
 
             const path = pathToNotify.split(".");
             for (const p of path) {
@@ -99,7 +99,7 @@ export class SettingsStore<T extends object> {
                     );
                     return;
                 }
-                v = v[p];
+                v = (v as Record<string, unknown>)[p];
             }
 
             this.pathListeners.get(pathToNotify)?.forEach(cb => cb(v));

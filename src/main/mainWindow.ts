@@ -90,14 +90,6 @@ function initMenuBar(win: BrowserWindow) {
             click: createAboutWindow
         },
         {
-            label: "Refresh Excord and local plugins",
-            accelerator: "CmdOrCtrl+R",
-            async click() {
-                await refreshExcord(win);
-            },
-            toolTip: "Recompile changed plugin folders and reload Discord"
-        },
-        {
             label: "Reset Excord",
             async click() {
                 await clearData(win);
@@ -195,7 +187,13 @@ function initMenuBar(win: BrowserWindow) {
         },
         { role: "fileMenu" },
         { role: "editMenu" },
-        { role: "viewMenu" },
+        { label: "View", submenu: [
+            { id: "excord-refresh", label: "Refresh Excord and local plugins", accelerator: "CmdOrCtrl+R", click: () => { void refreshExcord(win); } },
+            { id: "excord-force-refresh", label: "Refresh Excord without browser cache", accelerator: "CmdOrCtrl+Shift+R", click: () => { void refreshExcord(win, true); } },
+            { role: "toggleDevTools" }, { type: "separator" },
+            { role: "resetZoom" }, { role: "zoomIn" }, { role: "zoomOut" },
+            { type: "separator" }, { role: "togglefullscreen" }
+        ] },
         isDarwin && { role: "windowMenu" }
     ] satisfies MenuItemList;
 
@@ -264,7 +262,7 @@ function initSettingsListeners(win: BrowserWindow) {
 }
 
 async function initSpellCheckLanguages(_win: BrowserWindow, languages?: string[]) {
-    languages ??= await sendRendererCommand(IpcCommands.GET_LANGUAGES);
+    languages ??= app.getPreferredSystemLanguages();
     if (!languages) return;
 
     const ses = session.defaultSession;

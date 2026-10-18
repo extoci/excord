@@ -71,7 +71,7 @@ export async function handleVesktopAssetsProtocol(path: string, req: Request) {
         if (res.ok) return res;
     } catch {}
 
-    return net.fetch(pathToFileURL(join(STATIC_DIR, DEFAULT_ASSETS[asset])).href);
+    return net.fetch(pathToFileURL(join(STATIC_DIR, DEFAULT_ASSETS[asset as UserAssetType])).href);
 }
 
 handle(IpcEvents.CHOOSE_USER_ASSET, async (_event, asset: UserAssetType, value?: null) => {
