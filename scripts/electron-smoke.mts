@@ -42,6 +42,7 @@ stopHungApplication = () => { application.process().kill(); };
 const errors: string[] = [];
 let telemetryBlocks = 0;
 let mainOutput = "";
+application.on("console", message => { mainOutput = (mainOutput + message.text() + "\n").slice(-16000); });
 application.process().stdout?.on("data", data => { mainOutput = (mainOutput + String(data)).slice(-16000); });
 application.process().stderr?.on("data", data => { mainOutput = (mainOutput + String(data)).slice(-16000); });
 try {
@@ -55,8 +56,8 @@ try {
     page.on("console", message => {
         if (message.type() === "error" && /Excord|Vencord|Equicord/.test(message.text())) console.error("[renderer]", message.text().slice(0, 500));
     });
-    await page.waitForFunction(() => (globalThis as Record<string, unknown>).__excordProbe === "first", { timeout: 30000 });
-    await page.waitForFunction(() => (globalThis as Record<string, unknown>).__excordNativeProbe === "native:first", { timeout: 10000 });
+    await page.waitForFunction(() => (globalThis as Record<string, unknown>).__excordProbe === "first", undefined, { timeout: 30000 });
+    await page.waitForFunction(() => (globalThis as Record<string, unknown>).__excordNativeProbe === "native:first", undefined, { timeout: 30000 });
     console.log("[smoke] Renderer and native probe loaded");
     const initial = await page.evaluate(() => ({
         native: typeof ExcordNative,
@@ -80,24 +81,24 @@ try {
         if (item.accelerator !== "CmdOrCtrl+R") throw new Error("The refresh shortcut must compile local plugins");
         item.click(item, BrowserWindow.getAllWindows()[0], {} as KeyboardEvent);
     })]);
-    await page.waitForFunction(() => (globalThis as Record<string, unknown>).__excordProbe === "second", { timeout: 30000 });
-    await page.waitForFunction(() => (globalThis as Record<string, unknown>).__excordNativeProbe === "native:second", { timeout: 10000 });
+    await page.waitForFunction(() => (globalThis as Record<string, unknown>).__excordProbe === "second", undefined, { timeout: 30000 });
+    await page.waitForFunction(() => (globalThis as Record<string, unknown>).__excordNativeProbe === "native:second", undefined, { timeout: 30000 });
     console.log("[smoke] Menu refresh loaded changed source");
 
     await Promise.all([page.waitForEvent("domcontentloaded"), page.evaluate(() => { void ExcordNative.refresh(); })]);
-    await page.waitForFunction(() => ExcordNative.getLocalPlugins().plugins[0]?.cacheHit === true, { timeout: 30000 });
+    await page.waitForFunction(() => ExcordNative.getLocalPlugins().plugins[0]?.cacheHit === true, undefined, { timeout: 30000 });
     assert.equal(await page.evaluate(() => ExcordNative.getLocalPlugins().issues.length), 0);
     console.log("[smoke] Unchanged source used the cache");
 
     await writeFile(join(plugin, "index.ts"), "export default { invalid !!!");
     await Promise.all([page.waitForEvent("domcontentloaded"), page.evaluate(() => { void ExcordNative.refresh(); })]);
-    await page.waitForFunction(() => ExcordNative.getLocalPlugins().issues.some(issue => issue.folder === "refresh-probe"), { timeout: 30000 });
+    await page.waitForFunction(() => ExcordNative.getLocalPlugins().issues.some(issue => issue.folder === "refresh-probe"), undefined, { timeout: 30000 });
     assert.equal(await page.evaluate(() => ExcordNative.getLocalPlugins().plugins.length), 0);
     assert.equal(await page.evaluate(() => typeof Vencord.Plugins.plugins.NoTrack), "object");
     console.log("[smoke] Syntax error isolated");
     await writeFile(join(plugin, "index.ts"), source("recovered"));
     await Promise.all([page.waitForEvent("domcontentloaded"), page.evaluate(() => { void ExcordNative.refresh(); })]);
-    await page.waitForFunction(() => (globalThis as Record<string, unknown>).__excordNativeProbe === "native:recovered", { timeout: 30000 });
+    await page.waitForFunction(() => (globalThis as Record<string, unknown>).__excordNativeProbe === "native:recovered", undefined, { timeout: 30000 });
     console.log("[smoke] Corrected source recovered");
     const diagnostics = await page.evaluate(() => ExcordNative.diagnostics());
     await mkdir("test-results", { recursive: true });
