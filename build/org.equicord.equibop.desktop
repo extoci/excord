@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Excord
+GenericName=Internet Messenger
+Type=Application
+Exec=excord %U
+Icon=org.equicord.excord
+Categories=Network;InstantMessaging;Chat;
+Keywords=discord;vencord;electron;chatexcord;
+MimeType=x-scheme-handler/discord;
+StartupWMClass=excord

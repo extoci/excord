@@ -1,0 +1,12 @@
+dist
+node_modules
+.env
+.DS_Store
+.idea/
+.zed
+resources
+static/dist/
+static/runtime/
+test-results/
+*.tsbuildinfo
+*.log

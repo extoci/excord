@@ -1,0 +1,12 @@
+{
+  "equicord": {
+    "repository": "https://github.com/Equicord/Equicord",
+    "commit": "e0e85c8d4f6dc73aac9368cf3f4b2200eac4d4b4",
+    "version": "1.15.11.0"
+  },
+  "desktop": {
+    "repository": "https://github.com/Equicord/Equibop",
+    "commit": "27219be3566589280c0c933b04753805381d3bc8",
+    "derivedFrom": "Vencord/Vesktop"
+  }
+}

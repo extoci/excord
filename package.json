@@ -1,0 +1,255 @@
+{
+  "name": "excord",
+  "desktopName": "excord",
+  "version": "0.1.0",
+  "private": true,
+  "description": "An opinionated Discord desktop client with refreshable TypeScript plugins",
+  "keywords": [],
+  "license": "GPL-3.0-or-later",
+  "author": "Excord contributors",
+  "main": "dist/js/main.js",
+  "scripts": {
+    "build": "bun run build:runtime && bun run scripts/build/build.mts",
+    "build:dev": "bun run build --dev",
+    "buildLibVesktop": "bun install --cwd packages/libvesktop && bun run --cwd packages/libvesktop build",
+    "compileArrpc": "bun run scripts/build/compileArrpc.mts",
+    "package": "bun run build && electron-builder",
+    "package:dir": "bun run build && electron-builder --dir",
+    "lint": "eslint",
+    "lint:fix": "bun lint --fix",
+    "start": "bun run build && electron .",
+    "start:dev": "bun run build:dev && electron .",
+    "start:watch": "bun run build:dev && bun run scripts/startWatch.mts",
+    "test": "bun test tests",
+    "testTypes": "tsc --noEmit",
+    "watch": "bun run build --watch",
+    "generateMeta": "bun run scripts/utils/generateMeta.mts",
+    "updateArrpcDB": "bun ./node_modules/arrpc-bun/scripts/update_db.ts",
+    "postinstall": "bun compileArrpc",
+    "build:runtime": "bun run scripts/build/runtime.mts",
+    "typecheck": "tsc-rs --noEmit",
+    "typecheck:reference": "tsc --noEmit",
+    "check": "bun run typecheck && bun test tests",
+    "package:mac": "bun run package --mac --arm64 --publish never",
+    "package:win": "bun run package --win --x64 --publish never"
+  },
+  "dependencies": {
+    "@types/ws": "^8.18.1",
+    "@typescript-eslint/eslint-plugin": "^8.70.0",
+    "@typescript-eslint/parser": "^8.70.0",
+    "arrpc-bun": "^1.4.0",
+    "electron-updater": "^6.8.9",
+    "tsutils": "^3.21.0",
+    "ws": "^8.21.3",
+    "esbuild": "^0.28.2"
+  },
+  "optionalDependencies": {
+    "@vencord/venmic": "^7.2.3"
+  },
+  "devDependencies": {
+    "@equicord/types": "^1.14.15",
+    "@fal-works/esbuild-plugin-global-externals": "^2.1.2",
+    "@ffmpeg/ffmpeg": "^0.12.10",
+    "@ffmpeg/util": "^0.12.1",
+    "@intrnl/xxhash64": "^0.1.2",
+    "@resvg/resvg-js": "^2.6.2",
+    "@song-spotlight/api": "^2.2.0",
+    "@streamparser/json": "^0.0.22",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/bun": "1.3.11",
+    "@types/node": "^26.6.1",
+    "@types/react": "19.2.9",
+    "@vap/core": "0.0.12",
+    "@vap/shiki": "0.10.5",
+    "@vencord/discord-types": "file:vendor/equicord/packages/discord-types",
+    "diff": "^9.0.0",
+    "dotenv": "^17.4.2",
+    "electron": "^43.7.1",
+    "electron-builder": "^26.16.1",
+    "eslint": "^10.10.0",
+    "eslint-import-resolver-alias": "^1.1.2",
+    "eslint-plugin-path-alias": "^2.1.0",
+    "eslint-plugin-prettier": "^5.5.6",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-simple-header": "^1.2.2",
+    "eslint-plugin-simple-import-sort": "^14.0.0",
+    "eslint-plugin-unused-imports": "^4.4.1",
+    "fflate": "^0.8.3",
+    "gifenc": "github:mattdesl/gifenc#64842fca317b112a8590f8fef2bf3825da8f6fe3",
+    "gifuct-js": "^2.1.2",
+    "highlight.js": "11.11.1",
+    "html-minifier-terser": "^7.2.0",
+    "idb": "8.0.3",
+    "jsqr": "1.4.0",
+    "libvesktop": "file:packages/libvesktop",
+    "md5": "^2.3.0",
+    "moment": "^2.22.2",
+    "monaco-editor": "^0.55.1",
+    "nanoid": "^5.1.16",
+    "native-file-system-adapter": "^3.0.1",
+    "p-limit": "^7.3.0",
+    "playwright-core": "^1.64.1",
+    "png2icons": "^2.0.1",
+    "prettier": "^3.9.7",
+    "source-map-support": "^0.5.21",
+    "ts-pattern": "^5.9.0",
+    "tsc-rs": "0.6.0",
+    "tsx": "^4.23.13",
+    "type-fest": "^5.9.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.0",
+    "virtual-merge": "^1.0.1",
+    "xml-formatter": "^3.7.0",
+    "yaml-js": "^0.3.1"
+  },
+  "engines": {
+    "bun": ">=1.3.0"
+  },
+  "build": {
+    "appId": "app.excord.desktop",
+    "productName": "Excord",
+    "executableName": "excord",
+    "files": [
+      "!*",
+      "!node_modules",
+      "dist/js",
+      "static",
+      "package.json",
+      "LICENSE",
+      "THIRD_PARTY_NOTICES.md"
+    ],
+    "protocols": {
+      "name": "Discord",
+      "schemes": [
+        "discord"
+      ]
+    },
+    "beforePack": "scripts/build/beforePack.mjs",
+    "afterPack": "scripts/build/afterPack.mjs",
+    "afterSign": "scripts/build/afterSign.mjs",
+    "toolsets": {
+      "appimage": "1.0.3"
+    },
+    "linux": {
+      "icon": "build/icon.svg",
+      "category": "Network",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "desktop": {
+        "entry": {
+          "Name": "Excord",
+          "GenericName": "Internet Messenger",
+          "Type": "Application",
+          "Categories": "Network;InstantMessaging;Chat;",
+          "Keywords": "discord;vencord;electron;chat;excord",
+          "MimeType": "x-scheme-handler/discord",
+          "StartupWMClass": "excord"
+        }
+      }
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.social-networking",
+      "darkModeSupport": true,
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "This app needs access to the microphone",
+        "NSCameraUsageDescription": "This app needs access to the camera",
+        "com.apple.security.device.audio-input": true,
+        "com.apple.security.device.camera": true,
+        "CFBundleIconName": "Icon"
+      },
+      "notarize": false,
+      "minimumSystemVersion": "27.0"
+    },
+    "dmg": {
+      "icon": "build/icon.icns",
+      "iconSize": 105,
+      "window": {
+        "width": 512,
+        "height": 340
+      },
+      "contents": [
+        {
+          "x": 140,
+          "y": 160
+        },
+        {
+          "x": 372,
+          "y": 160,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "nsis": {
+      "artifactName": "${productName}-Setup-${version}-${arch}.${ext}",
+      "include": "build/installer.nsh",
+      "oneClick": false
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "publish": {
+      "provider": "github"
+    },
+    "rpm": {
+      "fpm": [
+        "--rpm-rpmbuild-define=_build_id_links none"
+      ]
+    },
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": false,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": false,
+      "onlyLoadAppFromAsar": true,
+      "loadBrowserProcessSpecificV8Snapshot": false,
+      "grantFileProtocolExtraPrivileges": false
+    },
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "asarUnpack": [
+      "node_modules/@esbuild/**",
+      "node_modules/esbuild/**"
+    ]
+  },
+  "trustedDependencies": [
+    "@vencord/venmic",
+    "electron",
+    "electron-winstaller",
+    "esbuild"
+  ]
+}

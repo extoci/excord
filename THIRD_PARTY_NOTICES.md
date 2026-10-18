@@ -1,0 +1,9 @@
+# Third-party source
+
+The desktop implementation derives from Equicord/Equibop at commit 27219be3566589280c0c933b04753805381d3bc8. Equibop derives from Vencord/Vesktop. These projects license their code under GPL-3.0-or-later. Excord preserves their copyright headers.
+
+The bundled plugin runtime and catalog are in vendor/equicord, copied from Equicord/Equicord at commit e0e85c8d4f6dc73aac9368cf3f4b2200eac4d4b4. Equicord derives from Vendicated/Vencord. Its license is in vendor/equicord/LICENSE. Excord's runtime bridge and native registration patches appear in the same source tree and in src/excord.
+
+Electron and its bundled Chromium libraries carry their own license notices in the distributed Electron runtime. Generated Equicord bundles preserve linked legal comment files. Other dependencies retain the license notices in their packages.
+
+Excord does not claim affiliation with or support from Discord, Equicord, Equibop, Vencord, or Vesktop. Use Excord's own issue tracker for Excord-specific problems.
