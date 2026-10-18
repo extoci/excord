@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, readdir, rm, symlink, truncate, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runInNewContext } from "node:vm";
@@ -132,6 +132,56 @@ describe("local plugin compilation", () => {
         const result = await first;
         expect(result.plugins).toHaveLength(1);
         expect(result.issues[0].folder).toBe("linked");
+    });
+
+    test("reads file imports and invalidates a file outside the plugin folder", async () => {
+        const { root, plugins, compiler } = await setup();
+        const directory = await createLocalPlugin(plugins, "raw-files");
+        await writeFile(join(root, "shared.txt"), "first\n");
+        await writeFile(join(directory, "index.ts"), 'import text from "file://../../shared.txt"; export default { text };');
+        expect(evaluate((await compiler.prepare()).plugins[0].code).text).toBe("first");
+        await writeFile(join(root, "shared.txt"), "second\n");
+        const second = await compiler.prepare();
+        expect(evaluate(second.plugins[0].code).text).toBe("second");
+        expect(second.plugins[0].cacheHit).toBe(false);
+    });
+
+    test("rebuilds native dependencies outside a plugin folder", async () => {
+        const { root, plugins, compiler } = await setup();
+        const directory = await createLocalPlugin(plugins, "native-shared");
+        await writeFile(join(root, "native-helper.ts"), 'export const value = "before";');
+        await writeFile(join(directory, "native.ts"), 'export { value } from "../../native-helper";');
+        const first = await compiler.prepare();
+        expect(first.issues).toEqual([]);
+        const before = await readFile(first.plugins[0].nativePath!, "utf8");
+        await writeFile(join(root, "native-helper.ts"), 'export const value = "after";');
+        const second = await compiler.prepare();
+        expect(second.plugins[0].cacheHit).toBe(false);
+        expect(await readFile(second.plugins[0].nativePath!, "utf8")).not.toBe(before);
+    });
+
+    test("removes obsolete compiled artifacts rather than growing the cache on every edit", async () => {
+        const { root, plugins, compiler } = await setup();
+        const directory = await createLocalPlugin(plugins, "cache-cleanup");
+        await compiler.prepare();
+        expect(await readdir(join(root, "cache"))).toHaveLength(1);
+        await writeFile(join(directory, "helper.txt"), "changed");
+        await compiler.prepare();
+        expect(await readdir(join(root, "cache"))).toHaveLength(1);
+        await rm(directory, { recursive: true });
+        await compiler.prepare();
+        expect(await readdir(join(root, "cache"))).toEqual([]);
+    });
+
+    test("rejects oversized source files before loading them into memory", async () => {
+        const { plugins, compiler } = await setup();
+        const directory = await createLocalPlugin(plugins, "large-file");
+        const asset = join(directory, "large.bin");
+        await writeFile(asset, "");
+        await truncate(asset, 33 * 1024 * 1024);
+        const result = await compiler.prepare();
+        expect(result.plugins).toEqual([]);
+        expect(result.issues[0].message).toContain("32 MiB");
     });
 });
 

@@ -49,10 +49,14 @@ jobs:
       - name: Exercise the RPC worker
         run: bun run test:rpc
       - name: Exercise local plugins in Electron
+        timeout-minutes: 5
         run: bun run test:electron
       - name: Build installer and archive
         run: bun x electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --publish never
       - name: Exercise the packaged application archive
+        run: bun run check:package
+      - name: Exercise local plugins from the packaged archive
+        timeout-minutes: 5
         run: bun run test:electron --packaged
       - uses: actions/upload-artifact@v4
         if: always()

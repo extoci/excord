@@ -1,0 +1,29 @@
+# Excord releases
+
+Excord uses GitHub Actions, GitHub Releases, and electron-updater. The desktop app and its pinned Equicord catalog ship together. There is no Excord-hosted catalog or update server.
+
+The repository is currently private. Keep it private until the user asks to publish it. GitHub requires repository access to download its artifacts and releases. A private repository's update feed is not available to unauthenticated desktop installations. Do not embed a GitHub token in the application.
+
+## Native build artifacts
+
+The Native builds workflow runs on pushes to main and on pull requests. It checks strict TypeScript with ts-rust and the reference compiler, runs the folder-compiler tests, builds the app, tests RPC, and exercises local plugins in Electron against Discord's login page.
+
+Each job then builds its installer and archive, checks the package contents, and repeats the Electron plugin test from the packaged ASAR. These checks catch failures that a development launch misses, including a missing compiler executable or an ASAR path that cannot execute a subprocess.
+
+The primary artifacts are an Apple silicon DMG and ZIP, plus a Windows x64 installer and ZIP. The macOS package declares macOS 27 as its minimum system version. CI currently uses GitHub's macOS 26 Apple silicon runner to build and smoke-test the Electron runtime; testing physical device behavior on macOS 27 remains separate.
+
+CI artifacts stay private with the repository. Verification artifacts include the smoke-test report and a screenshot of the logged-out app. They contain no Discord credentials.
+
+## Draft and tagged releases
+
+To prepare a private draft, run the Release workflow manually from GitHub Actions. It builds and verifies both native targets, then creates a draft release for the version in package.json.
+
+For a published release, update package.json and the lockfile, commit the version change, then push the matching `vX.Y.Z` tag. The release workflow builds the tagged source, uploads the installers and updater metadata, and generates release notes. A tag containing a suffix creates a prerelease.
+
+Version tags and package.json must match. Do not move an existing release tag to different source code. Record the bundled Equicord revision in the release notes whenever it changes.
+
+## Signing and live feature checks
+
+The initial builds are unsigned and unnotarized. They are development builds for manual testing. Public distribution needs the project's own Apple and Windows signing configuration. No upstream signing identity or certificate belongs in Excord's build.
+
+The smoke tests verify startup and plugin loading without an account. They do not verify signing, account login, voice calls, camera permissions, screen sharing with audio, tray behavior, or notifications on physical machines. Complete those checks on the user's Mac and Windows computer before calling a release ready for daily use.

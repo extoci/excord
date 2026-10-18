@@ -16,11 +16,15 @@ bun run start
 
 `bun run typecheck` uses `tsc-rs` from pingdotgg/ts-rust. `bun run typecheck:reference` cross-checks with TypeScript. Run `bun test tests` for the local compiler and origin checks.
 
+After a build, `bun run test:rpc` checks the optional RPC worker. `bun run test:electron` exercises local plugins against the real Discord login page. GitHub Actions runs both on native Apple silicon and Windows runners, builds installers, and repeats plugin checks from the packaged archive.
+
 ## Local plugins
 
 Open Excord Settings and create a plugin, or put a folder containing `index.ts` or `index.tsx` in Excord's plugins directory. Use the Vencord plugin API. Press Cmd+R or Ctrl+R to compile changed folders and reload the page. Excord reports compilation and loading errors in its settings page.
 
 Plugins execute in your Discord session. A plugin with `native.ts` can also execute Node code on your computer. Only install code you trust.
+
+Read the [plugin guide](docs/local-plugins.md), [compatibility record](docs/compatibility.md), and [release instructions](docs/releases.md).
 
 ## Credits and license
 

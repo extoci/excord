@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 
 import type { BuildOptions, Plugin } from "esbuild";
@@ -23,6 +23,8 @@ export async function fingerprintFolder(folder: string): Promise<string> {
             if (entry.isDirectory()) await visit(path);
             else if (entry.isFile()) {
                 if (++count > maximumFiles) throw new Error(`A plugin folder can contain at most ${maximumFiles} source files.`);
+                const size = (await stat(path)).size;
+                if (bytes + size > maximumBytes) throw new Error("A plugin folder can contain at most 32 MiB of source files.");
                 const contents = await readFile(path);
                 bytes += contents.length;
                 if (bytes > maximumBytes) throw new Error("A plugin folder can contain at most 32 MiB of source files.");
@@ -34,19 +36,19 @@ export async function fingerprintFolder(folder: string): Promise<string> {
     return hash.digest("hex");
 }
 
-function moduleBridge(aliases: string[]): Plugin {
+function moduleBridge(aliases: string[], native = false): Plugin {
     const available = new Set(aliases);
     return {
         name: "excord-shared-api",
         setup(build) {
-            build.onResolve({ filter: /^(?:@(?:api|utils|webpack|components|shared)(?:\/|$)|~plugins$)/ }, args => {
+            build.onResolve({ filter: /^(?:@(?:api|utils|webpack|components|shared|main|plugins|equicordplugins|debug)(?:\/|$)|~plugins$)/ }, args => {
                 let key = args.path.replace(/\.tsx?$/, "");
                 if (!available.has(key) && available.has(`${key}/index`)) key += "/index";
                 if (!available.has(key)) return { errors: [{ text: `The bundled Equicord revision does not export ${args.path}.` }] };
                 return { path: key, namespace: "excord-api" };
             });
             build.onLoad({ filter: /.*/, namespace: "excord-api" }, ({ path }) => ({
-                contents: `const host=globalThis.ExcordModules[${JSON.stringify(path)}];Object.defineProperty(exports,"__esModule",{value:true});for(const key of Object.keys(host)){if(key!=="__esModule")Object.defineProperty(exports,key,{enumerable:true,get:()=>host[key]});}`
+                contents: `const host=globalThis.${native ? "ExcordNativeModules" : "ExcordModules"}[${JSON.stringify(path)}];Object.defineProperty(exports,"__esModule",{value:true});for(const key of Object.keys(host)){if(key!=="__esModule")Object.defineProperty(exports,key,{enumerable:true,get:()=>host[key]});}`
             }));
         }
     };
@@ -68,6 +70,7 @@ async function atomicWrite(path: string, value: string) {
 
 export class LocalPluginCompiler {
     private pending: Promise<LocalPluginSnapshot> | undefined;
+    private usedArtifacts = new Set<string>();
 
     constructor(
         readonly pluginsDirectory: string,
@@ -81,6 +84,7 @@ export class LocalPluginCompiler {
 
     private async compileAll(): Promise<LocalPluginSnapshot> {
         const started = performance.now();
+        this.usedArtifacts.clear();
         const snapshot: LocalPluginSnapshot = { plugins: [], issues: [], preparedAt: new Date().toISOString(), durationMs: 0 };
         await mkdir(this.pluginsDirectory, { recursive: true });
         await mkdir(this.cacheDirectory, { recursive: true });
@@ -99,6 +103,10 @@ export class LocalPluginCompiler {
             }
         }
         snapshot.durationMs = performance.now() - started;
+        for (const file of await readdir(this.cacheDirectory)) {
+            const path = join(this.cacheDirectory, file);
+            if (/^[a-f0-9]{64}\.(?:js|cjs)(?:\.\d+\.tmp)?$/.test(file) && !this.usedArtifacts.has(path)) await rm(path, { force: true });
+        }
         return snapshot;
     }
 
@@ -112,6 +120,8 @@ export class LocalPluginCompiler {
         const cache = join(this.cacheDirectory, identity);
         const rendererPath = `${cache}.js`;
         const nativePath = `${cache}.cjs`;
+        this.usedArtifacts.add(rendererPath);
+        this.usedArtifacts.add(nativePath);
         const cached = await optionalRead(rendererPath);
         const hasNative = await optionalRead(join(directory, "native.ts")) !== undefined;
         const hasNativeIndex = !hasNative && await optionalRead(join(directory, "native/index.ts")) !== undefined;
@@ -125,6 +135,25 @@ export class LocalPluginCompiler {
 
         // Loading the compiler and its native executable is deferred until a plugin actually changes.
         const { build } = await import("esbuild");
+        const rawFiles: Plugin = {
+            name: "excord-file-imports",
+            setup(ctx) {
+                ctx.onResolve({ filter: /^file:\/\// }, args => {
+                    const [file, query = ""] = args.path.slice(7).split("?");
+                    return { path: resolve(args.resolveDir, file), namespace: "excord-file", pluginData: query };
+                });
+                ctx.onLoad({ filter: /.*/, namespace: "excord-file" }, async ({ path, pluginData }) => {
+                    const parameters = new URLSearchParams(String(pluginData));
+                    let content = await readFile(path);
+                    if (parameters.has("minify") && /\.[mc]?[jt]sx?$/.test(path)) {
+                        const result = await build({ entryPoints: [path], write: false, minify: true, logLevel: "silent" });
+                        content = Buffer.from(result.outputFiles![0].text);
+                    }
+                    const text = content.toString(parameters.has("base64") ? "base64" : "utf8");
+                    return { contents: `export default ${JSON.stringify(parameters.get("trim") === "false" ? text : text.trimEnd())};` };
+                });
+            }
+        };
         const sourceRoot = resolve(directory);
         const styles: Plugin = {
             name: "excord-local-styles",
@@ -144,23 +173,26 @@ export class LocalPluginCompiler {
             sourcemap: "inline", target: "es2022", logLevel: "silent",
             define: Object.fromEntries(Object.entries(this.manifest.defines).map(([key, value]) => [key, JSON.stringify(value)])),
             jsx: "transform", jsxFactory: "ExcordReact.createElement", jsxFragment: "ExcordReact.Fragment",
-            plugins: [moduleBridge(this.manifest.aliases), styles],
+            plugins: [moduleBridge(this.manifest.aliases), styles, rawFiles],
             banner: { js: 'const ExcordReact = new Proxy({}, {get: (_, key) => globalThis.ExcordModules["@webpack/common"].React[key]});' }
         };
         const renderer = await build({ ...options, entryPoints: [join(directory, entry)], format: "iife", globalName: "ExcordLocalPlugin", metafile: true });
         // A cached plugin may depend on installed packages. Rebuild it on refresh so package edits are never stale.
-        const hasExternalInputs = Object.keys(renderer.metafile!.inputs).some(path => {
-            if (path.startsWith("excord-")) return false;
-            const rel = relative(sourceRoot, resolve(directory, path));
+        const hasExternalInputs = (inputs: string[]) => inputs.some(path => {
+            if (path.startsWith("excord-api:")) return false;
+            const inputPath = path.replace(/^excord-(?:style|file):/, "");
+            const rel = relative(sourceRoot, resolve(directory, inputPath));
             return rel === ".." || rel.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`) || isAbsolute(rel) || path.includes("node_modules");
         });
+        let volatileDependencies = hasExternalInputs(Object.keys(renderer.metafile!.inputs));
         const code = renderer.outputFiles![0].text;
         if (nativeEntry) {
             const native = await build({ ...options, entryPoints: [nativeEntry], platform: "node", format: "cjs",
-                plugins: [], banner: undefined, external: ["electron", "original-fs"], jsx: "automatic" });
+                plugins: [moduleBridge(this.manifest.nativeAliases ?? [], true), rawFiles], banner: undefined, external: ["electron", "original-fs"], jsx: "automatic", metafile: true });
+            volatileDependencies ||= hasExternalInputs(Object.keys(native.metafile!.inputs));
             await atomicWrite(nativePath, native.outputFiles![0].text);
         }
-        if (hasExternalInputs) await rm(rendererPath, { force: true });
+        if (volatileDependencies) await rm(rendererPath, { force: true });
         else await atomicWrite(rendererPath, code);
         return { folder, code, cacheHit: false, durationMs: performance.now() - started, ...(nativeEntry ? { nativePath, nativePluginName } : {}) };
     }

@@ -37,7 +37,8 @@ export async function githubGet(endpoint: string) {
 }
 
 export async function downloadVencordAsar() {
-    throw new Error("Excord bundles a tested Equicord revision. Update Excord to update the plugin runtime.");
+    // Retained internal name for the inherited repair command. Runtime updates ship with Excord.
+    await ensureVencordFiles();
 }
 
 export function isValidVencordInstall(dir: string) {

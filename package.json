@@ -32,11 +32,10 @@
     "package:win": "bun run package --win --x64 --publish never",
     "build:icons": "bun run scripts/build/icons.mts",
     "test:electron": "node --import tsx scripts/electron-smoke.mts",
-    "test:rpc": "node --import tsx scripts/rpc-smoke.mts"
+    "test:rpc": "node --import tsx scripts/rpc-smoke.mts",
+    "check:package": "node --import tsx scripts/assert-package.mts"
   },
   "dependencies": {
-    "electron-updater": "^6.8.9",
-    "ws": "^8.21.3",
     "esbuild": "^0.28.2"
   },
   "optionalDependencies": {
@@ -104,7 +103,10 @@
     "typescript-eslint": "^8.70.0",
     "virtual-merge": "^1.0.1",
     "xml-formatter": "^3.7.0",
-    "yaml-js": "^0.3.1"
+    "yaml-js": "^0.3.1",
+    "@electron/asar": "4.2.0",
+    "electron-updater": "^6.8.9",
+    "ws": "^8.21.3"
   },
   "engines": {
     "bun": ">=1.3.0"

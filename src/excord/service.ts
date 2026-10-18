@@ -22,6 +22,7 @@ if (STATIC_DIR.includes(".asar") && !process.env.ESBUILD_BINARY_PATH) {
 }
 
 interface NativeRegistry {
+    modules: Record<string, unknown>;
     registerPluginNatives(name: string, methods: Record<string, (...args: unknown[]) => unknown>): void;
     unregisterPluginNatives(name: string): void;
 }
@@ -38,6 +39,7 @@ function assertSender(frame: WebFrameMain | null) {
 
 export async function prepareLocalPlugins() {
     const native: NativeRegistry = requireNative(join(STATIC_DIR, "runtime/main.js"));
+    globalThis.ExcordNativeModules = native.modules;
     for (const [name, entry] of nativePlugins) {
         try { await entry.dispose?.(); }
         catch (error) { console.error(`[Excord] Native cleanup failed for ${name}`, error); }
@@ -57,9 +59,10 @@ export async function prepareLocalPlugins() {
         } catch (error) {
             snapshot.issues.push({ folder: plugin.folder, phase: "native", message: error instanceof Error ? error.message : String(error) });
             // Do not run a renderer plugin whose native dependencies failed to load.
-            plugin.code = "var ExcordLocalPlugin = {};";
+            plugin.code = "";
         }
     }
+    snapshot.plugins = snapshot.plugins.filter(plugin => plugin.code !== "");
 }
 
 export function refreshExcord(win = currentWindow, ignoreCache = false): Promise<void> {
@@ -105,6 +108,8 @@ ipcMain.on(ExcordChannels.reportIssues, (event, issues: unknown) => {
     const parsed = issues.filter((issue): issue is PluginIssue => !!issue && typeof issue === "object"
         && typeof issue.folder === "string" && typeof issue.message === "string" && issue.phase === "load");
     snapshot.issues.push(...parsed.slice(0, 100));
+    const failed = new Set(parsed.map(issue => issue.folder));
+    snapshot.plugins = snapshot.plugins.filter(plugin => !failed.has(plugin.folder));
 });
 ipcMain.handle(ExcordChannels.openPlugins, async event => {
     assertSender(event.senderFrame);

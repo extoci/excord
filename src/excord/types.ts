@@ -30,6 +30,7 @@ export interface PerformanceSnapshot {
 
 export interface RuntimeModuleManifest {
     aliases: string[];
+    nativeAliases?: string[];
     defines: Record<string, string | number | boolean>;
     revision: string;
 }

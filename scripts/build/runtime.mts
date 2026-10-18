@@ -52,6 +52,28 @@ const bridge: Plugin = {
     }
 };
 
+const nativeModules: Record<string, string> = {};
+for (const directory of ["main/utils", "shared"]) {
+    for (const entry of await readdir(join(vendor, "src", directory))) {
+        if (entry.endsWith(".ts") && !entry.endsWith(".d.ts")) nativeModules[`@${directory}/${entry.slice(0, -3)}`] = join(vendor, "src", directory, entry);
+    }
+}
+for (const file of ["main/settings", "main/csp"]) nativeModules[`@${file}`] = join(vendor, "src", file);
+const nativeBridge: Plugin = {
+    name: "excord-native-api",
+    setup(ctx) {
+        ctx.onResolve({ filter: /^~excord-native-modules$/ }, () => ({ path: "native-modules", namespace: "excord-native-api" }));
+        ctx.onLoad({ filter: /.*/, namespace: "excord-native-api" }, () => {
+            const entries = Object.entries(nativeModules);
+            return { contents: entries.map(([, path], index) => `import * as n${index} from ${JSON.stringify(path)};`).join("\n")
+                + `\nexport default {${entries.map(([key], index) => `${JSON.stringify(key)}:n${index}`).join(",")}};`, resolveDir: vendor };
+        });
+        ctx.onLoad({ filter: /[/\\]src[/\\]main[/\\]index\.ts$/ }, async ({ path }) => ({
+            contents: await readFile(path, "utf8") + '\nexport {default as modules} from "~excord-native-modules";\n', loader: "ts", resolveDir: dirname(path)
+        }));
+    }
+};
+
 const defines = {
     IS_STANDALONE: true, IS_DEV: false, IS_REPORTER: false, IS_COMPANION_TEST: false,
     IS_UPDATER_DISABLED: true, IS_ANTI_CRASH_TEST: false, IS_WEB: false,
@@ -90,13 +112,24 @@ const natives: Plugin = {
 
 await build({ ...common, entryPoints: ["src/main/index.ts"], outfile: join(out, "main.js"),
     platform: "node", format: "cjs", external: ["electron", "original-fs", "/assets/*"],
-    plugins: [natives, ...upstream.commonOpts.plugins] });
+    plugins: [nativeBridge, natives, ...upstream.commonOpts.plugins] });
 await build({ ...common, entryPoints: ["src/preload.ts"], outfile: join(out, "preload.js"),
     platform: "node", format: "cjs", external: ["electron", "electron/renderer", "original-fs", "/assets/*"] });
-const renderer = await build({ ...common, entryPoints: ["src/Vencord.ts"], outfile: join(out, "renderer.js"),
+const rendererOptions = { ...common, entryPoints: ["src/Vencord.ts"], outfile: join(out, "renderer.js"),
     format: "iife", globalName: "Vencord", metafile: true,
-    plugins: [bridge, upstream.globPlugins("equibop"), ...upstream.commonRendererPlugins] });
-await writeFile(join(out, "modules.json"), JSON.stringify({ aliases: Object.keys(modules), defines, revision: lock.equicord.commit }, null, 2));
+    plugins: [bridge, upstream.globPlugins("equibop"), ...upstream.commonRendererPlugins] } as const;
+const baseline = await build({ ...rendererOptions, write: false, logLevel: "silent" });
+// Expose plugin helpers that already belong to this target's renderer graph.
+// This avoids importing desktop-only or native modules into the website.
+for (const path of Object.keys(baseline.metafile!.inputs)) {
+    const source = path.replaceAll("\\", "/");
+    if (!/^src\/(plugins|equicordplugins|debug)\/.+\.tsx?$/.test(source) || source.endsWith(".d.ts")) continue;
+    const key = `@${source.slice(4).replace(/\.tsx?$/, "")}`;
+    modules[key] = join(vendor, path);
+    if (key.endsWith("/index")) modules[key.slice(0, -6)] = modules[key];
+}
+const renderer = await build(rendererOptions);
+await writeFile(join(out, "modules.json"), JSON.stringify({ aliases: Object.keys(modules), nativeAliases: Object.keys(nativeModules), defines, revision: lock.equicord.commit }, null, 2));
 await writeFile(join(out, "bundle-report.json"), JSON.stringify({ revision: lock.equicord.commit,
     outputs: Object.fromEntries(Object.entries(renderer.metafile!.outputs).map(([path, value]) => [relative(vendor, path), { bytes: value.bytes }])) }, null, 2));
 process.chdir(root);

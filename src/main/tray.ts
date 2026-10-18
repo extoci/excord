@@ -225,7 +225,7 @@ export async function initTray(win: BrowserWindow, setIsQuitting: (val: boolean)
                     { id: 5, label: "Launch Arguments", enabled: true, visible: true },
                     { id: 10, label: "Configure Rich Presence", enabled: true, visible: true },
                     { id: 12, type: "separator" as const, enabled: true, visible: true },
-                    { id: 3, label: "Repair Equicord", enabled: true, visible: true },
+                    { id: 3, label: "Verify runtime and restart", enabled: true, visible: true },
                     { id: 4, label: "Reset Excord", enabled: true, visible: true },
                     { id: 7, type: "separator" as const, enabled: true, visible: true },
                     { id: 8, label: "Restart", enabled: true, visible: true },
@@ -336,7 +336,7 @@ export async function initTray(win: BrowserWindow, setIsQuitting: (val: boolean)
         },
         { type: "separator" },
         {
-            label: "Repair Equicord",
+            label: "Verify runtime and restart",
             async click() {
                 try {
                     await downloadVencordAsar();

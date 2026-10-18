@@ -160,17 +160,7 @@ handle(IpcEvents.SELECT_VENCORD_DIR, async (_e, value?: null) => {
         return "ok";
     }
 
-    const res = await dialog.showOpenDialog(mainWin!, {
-        properties: ["openDirectory"]
-    });
-    if (!res.filePaths.length) return "cancelled";
-
-    const dir = res.filePaths[0];
-    if (!isValidVencordInstall(dir)) return "invalid";
-
-    State.store.equicordDir = dir;
-
-    return "ok";
+    throw new Error("Excord v0 uses its bundled runtime. Put personal plugins in Excord's plugins folder instead.");
 });
 
 handle(IpcEvents.SET_BADGE_COUNT, (_, count: number) => setBadgeCount(count));

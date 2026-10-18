@@ -6,4 +6,6 @@ The bundled plugin runtime and catalog are in vendor/equicord, copied from Equic
 
 Electron and its bundled Chromium libraries carry their own license notices in the distributed Electron runtime. Generated Equicord bundles preserve linked legal comment files. Other dependencies retain the license notices in their packages.
 
+The Node RPC worker uses Vencord/arrpc at commit 1dc801e8ea14d96ce8dccff416417614f058afb8, licensed under MIT. Its worker integration derives from Vencord/Vesktop and preserves that project's GPL copyright notice. Excord does not distribute the former standalone arrpc-bun executable.
+
 Excord does not claim affiliation with or support from Discord, Equicord, Equibop, Vencord, or Vesktop. Use Excord's own issue tracker for Excord-specific problems.
