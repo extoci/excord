@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
@@ -119,8 +120,22 @@ try {
     throw error;
 } finally {
     console.log("[smoke] Closing Electron");
+    await application.evaluate(({ app }) => {
+        for (const event of ["before-quit", "will-quit", "quit"] as const)
+            app.on(event, () => console.log(`[smoke] App event: ${event}`));
+    }).catch(() => {});
+    application.process().on("exit", (code, signal) => console.log("[smoke] Electron process exit", code, signal));
     let forcedShutdown = false;
-    const shutdown = setTimeout(() => { forcedShutdown = true; application.process().kill(); }, 10000);
+    const shutdown = setTimeout(() => {
+        forcedShutdown = true;
+        console.error("[smoke] Shutdown output", mainOutput);
+        if (process.platform === "win32") {
+            try {
+                console.error(execFileSync("powershell.exe", ["-NoProfile", "-Command", "Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'electron|esbuild|Excord' } | Select-Object Name,ProcessId,ParentProcessId | ConvertTo-Json"], { encoding: "utf8", timeout: 5000 }));
+            } catch (error) { console.error(error); }
+        }
+        application.process().kill();
+    }, 10000);
     shutdown.unref();
     await application.close().catch(() => {});
     console.log("[smoke] Electron closed");
