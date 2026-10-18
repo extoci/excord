@@ -26,7 +26,7 @@ export const DefaultExcordSettings: Settings = {
     disableSmoothScroll: false,
     enableTaskbarFlashing: false,
     arRPC: false,
-    arRPCDisabled: false,
+    arRPCDisabled: true,
     arRPCDebug: false,
     arRPCProcessScanning: false,
     arRPCWebSocketAutoReconnect: true,

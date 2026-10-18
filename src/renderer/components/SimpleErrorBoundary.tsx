@@ -9,19 +9,7 @@ import { FluxDispatcher, InviteActions } from "@equicord/types/webpack/common";
 import type { PropsWithChildren } from "react";
 
 async function openSupportChannel() {
-    const code = "wKgT9j2xfN";
-    try {
-        const { invite } = await InviteActions.resolveInvite(code, "Desktop Modal");
-        if (!invite) throw 0;
-        await FluxDispatcher.dispatch({
-            type: "INVITE_MODAL_OPEN",
-            invite,
-            code,
-            context: "APP"
-        });
-    } catch {
-        window.open(`https://discord.gg/${code}`, "_blank");
-    }
+    window.open("https://github.com/extoci/excord/issues", "_blank");
 }
 
 function Fallback() {
@@ -29,9 +17,9 @@ function Fallback() {
         <Card variant="danger">
             <HeadingTertiary>Something went wrong.</HeadingTertiary>
             <Paragraph>
-                Please make sure Equicord and Excord are fully up to date. You can get help in our{" "}
+                This component failed to render. Report the problem in Excord's{" "}
                 <TextButton variant="link" onClick={openSupportChannel}>
-                    Support Channel
+                    issue tracker
                 </TextButton>
             </Paragraph>
         </Card>

@@ -14,6 +14,12 @@ const manifest: RuntimeModuleManifest = JSON.parse(readFileSync(join(STATIC_DIR,
 export const localPluginsDirectory = join(DATA_DIR, "plugins");
 const compiler = new LocalPluginCompiler(localPluginsDirectory, join(DATA_DIR, "plugin-cache"), manifest);
 const requireNative = createRequire(__filename);
+// spawn() cannot execute a path inside ASAR. Point esbuild at its unpacked binary.
+if (STATIC_DIR.includes(".asar") && !process.env.ESBUILD_BINARY_PATH) {
+    const binary = process.platform === "win32" ? `@esbuild/win32-${process.arch}/esbuild.exe`
+        : `@esbuild/${process.platform}-${process.arch}/bin/esbuild`;
+    process.env.ESBUILD_BINARY_PATH = requireNative.resolve(binary).replace(/\.asar([/\\])/, ".asar.unpacked$1");
+}
 
 interface NativeRegistry {
     registerPluginNatives(name: string, methods: Record<string, (...args: unknown[]) => unknown>): void;

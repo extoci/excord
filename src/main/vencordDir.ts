@@ -7,9 +7,6 @@
 import { join } from "path";
 
 import { STATIC_DIR } from "../shared/paths";
-import { State } from "./settings";
 
 // this is in a separate file to avoid circular dependencies
-export const VENCORD_DIR = State.store.equicordDir
-    ? join(State.store.equicordDir, "equibop")
-    : join(STATIC_DIR, "runtime");
+export const VENCORD_DIR = join(STATIC_DIR, "runtime");

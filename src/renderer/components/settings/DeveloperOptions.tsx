@@ -19,8 +19,8 @@ function openDeveloperOptionsModal(settings: Settings) {
     openModal(props => (
         <Modal {...props} size="md" title="Excord Developer Options">
             <div style={{ padding: "1em 0" }}>
-                <Heading tag="h5">Equicord Location</Heading>
-                <EquicordLocationPicker settings={settings} />
+                <Heading tag="h5">Bundled Equicord runtime</Heading>
+                <Paragraph>Excord releases include a tested runtime revision. Use Excord's local plugins folder for personal plugins, then refresh to load changes.</Paragraph>
 
                 <Heading tag="h5" className={Margins.top16}>
                     Debugging

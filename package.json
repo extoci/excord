@@ -12,7 +12,6 @@
     "build": "bun run build:runtime && bun run scripts/build/build.mts",
     "build:dev": "bun run build --dev",
     "buildLibVesktop": "bun install --cwd packages/libvesktop && bun run --cwd packages/libvesktop build",
-    "compileArrpc": "bun run scripts/build/compileArrpc.mts",
     "package": "bun run build && electron-builder",
     "package:dir": "bun run build && electron-builder --dir",
     "lint": "eslint",
@@ -24,8 +23,7 @@
     "testTypes": "tsc --noEmit",
     "watch": "bun run build --watch",
     "generateMeta": "bun run scripts/utils/generateMeta.mts",
-    "updateArrpcDB": "bun ./node_modules/arrpc-bun/scripts/update_db.ts",
-    "postinstall": "bun compileArrpc",
+    "postinstall": "node node_modules/electron/install.js",
     "build:runtime": "bun run scripts/build/runtime.mts",
     "typecheck": "tsc-rs --noEmit",
     "typecheck:reference": "tsc --noEmit",
@@ -33,7 +31,8 @@
     "package:mac": "bun run package --mac --arm64 --publish never",
     "package:win": "bun run package --win --x64 --publish never",
     "build:icons": "bun run scripts/build/icons.mts",
-    "test:electron": "node --import tsx scripts/electron-smoke.mts"
+    "test:electron": "node --import tsx scripts/electron-smoke.mts",
+    "test:rpc": "node --import tsx scripts/rpc-smoke.mts"
   },
   "dependencies": {
     "electron-updater": "^6.8.9",
@@ -57,9 +56,13 @@
     "@types/node": "^26.6.1",
     "@types/react": "19.2.9",
     "@types/react-dom": "19",
+    "@types/ws": "^8.18.1",
+    "@typescript-eslint/eslint-plugin": "^8.70.0",
+    "@typescript-eslint/parser": "^8.70.0",
     "@vap/core": "0.0.12",
     "@vap/shiki": "0.10.5",
     "@vencord/discord-types": "file:vendor/equicord/packages/discord-types",
+    "arrpc": "github:Vencord/arrpc#1dc801e8ea14d96ce8dccff416417614f058afb8",
     "diff": "^9.0.0",
     "dotenv": "^17.4.2",
     "electron": "^43.7.1",
@@ -94,18 +97,14 @@
     "source-map-support": "^0.5.21",
     "ts-pattern": "^5.9.0",
     "tsc-rs": "0.6.0",
+    "tsutils": "^3.21.0",
     "tsx": "^4.23.13",
     "type-fest": "^5.9.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.70.0",
     "virtual-merge": "^1.0.1",
     "xml-formatter": "^3.7.0",
-    "yaml-js": "^0.3.1",
-    "@types/ws": "^8.18.1",
-    "@typescript-eslint/eslint-plugin": "^8.70.0",
-    "@typescript-eslint/parser": "^8.70.0",
-    "tsutils": "^3.21.0",
-    "arrpc-bun": "^1.4.0"
+    "yaml-js": "^0.3.1"
   },
   "engines": {
     "bun": ">=1.3.0"
@@ -116,12 +115,14 @@
     "executableName": "excord",
     "files": [
       "!*",
-      "!node_modules",
       "dist/js",
       "static",
       "package.json",
       "LICENSE",
-      "THIRD_PARTY_NOTICES.md"
+      "THIRD_PARTY_NOTICES.md",
+      "node_modules/esbuild/**",
+      "node_modules/@esbuild/**",
+      "!static/dist/arrpc-*"
     ],
     "protocols": {
       "name": "Discord",
@@ -130,7 +131,6 @@
       ]
     },
     "beforePack": "scripts/build/beforePack.mjs",
-    "afterPack": "scripts/build/afterPack.mjs",
     "afterSign": "scripts/build/afterSign.mjs",
     "toolsets": {
       "appimage": "1.0.3"

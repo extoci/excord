@@ -7,6 +7,8 @@ import { join, resolve } from "node:path";
 import { _electron } from "playwright-core";
 
 const require = createRequire(import.meta.url);
+const packagedApp = process.platform === "darwin" ? "dist/mac-arm64/Excord.app/Contents/Resources/app.asar"
+    : process.platform === "win32" ? "dist/win-unpacked/resources/app.asar" : "dist/linux-unpacked/resources/app.asar";
 const profile = await mkdtemp(join(tmpdir(), "excord-smoke-"));
 const plugin = join(profile, "plugins/refresh-probe");
 await mkdir(plugin, { recursive: true });
@@ -23,7 +25,7 @@ const environment = Object.fromEntries(Object.entries(process.env).filter((entry
 delete environment.ELECTRON_RUN_AS_NODE;
 environment.EXCORD_USER_DATA_DIR = profile;
 const application = await _electron.launch({ executablePath: require("electron"),
-    args: [...(process.platform === "linux" ? ["--no-sandbox", "--disable-gpu"] : []), resolve(".")],
+    args: [...(process.platform === "linux" ? ["--no-sandbox", "--disable-gpu"] : []), resolve(process.env.EXCORD_SMOKE_APP ?? (process.argv.includes("--packaged") ? packagedApp : "."))],
     env: environment, timeout: 30000 });
 const errors: string[] = [];
 let telemetryBlocks = 0;
@@ -53,6 +55,7 @@ try {
     assert.ok(initial.moduleCount > 100);
     assert.equal(initial.hasPatch, true);
     assert.equal(initial.local[0].cacheHit, false);
+    assert.equal(await page.evaluate(() => VesktopNative.settings.get().arRPCDisabled), true);
 
     await writeFile(join(plugin, "index.ts"), source("second"));
     await Promise.all([page.waitForEvent("domcontentloaded"), application.evaluate(({ Menu, BrowserWindow }) => {
@@ -89,7 +92,8 @@ try {
         await page.screenshot({ path: "test-results/electron-failure.png" }).catch(() => {});
         const state = await page.evaluate(() => ({ url: location.href, title: document.title, text: document.body?.innerText?.slice(0, 500),
             native: typeof ExcordNative, modules: typeof ExcordModules, runtime: typeof Vencord, wrapper: typeof (globalThis as Record<string, unknown>).Excord,
-            probe: (globalThis as Record<string, unknown>).__excordProbe })).catch(String);
+            probe: (globalThis as Record<string, unknown>).__excordProbe,
+            localIssues: typeof ExcordNative === "undefined" ? [] : ExcordNative.getLocalPlugins().issues })).catch(String);
         console.error(JSON.stringify({ state, errors, mainOutput }, null, 2));
     }
     throw error;

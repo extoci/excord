@@ -87,6 +87,12 @@ await Promise.all([
     copyLibVesktop(),
     createContext({
         ...NodeCommonOpts,
+        entryPoints: ["src/main/arrpc/worker.ts"],
+        outfile: "dist/js/arRpcWorker.js",
+        footer: { js: "//# sourceURL=ExcordRpcWorker" }
+    }),
+    createContext({
+        ...NodeCommonOpts,
         entryPoints: ["src/main/index.ts"],
         outfile: "dist/js/main.js",
         footer: { js: "//# sourceURL=VesktopMain" }
