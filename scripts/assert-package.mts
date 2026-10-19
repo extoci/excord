@@ -38,6 +38,14 @@ async function inventory(directory: string): Promise<{ path: string; bytes: numb
     return files;
 }
 const files = await inventory(appDirectory);
+const localeFiles = files.filter(file => /(?:^|\/)locales\/[^/]+\.pak$|\.lproj\//.test(file.path));
+assert.ok(localeFiles.some(file => /(?:\/en-US\.pak|\/en\.lproj\/locale\.pak|\/en_US\.lproj\/locale\.pak)$/.test(file.path)),
+    "The English Chromium locale must ship so the packaged app can start");
+for (const file of localeFiles) {
+    const language = file.path.match(/(?:^|\/)locales\/([^/]+)\.pak$/)?.[1] ?? file.path.match(/(?:^|\/)([^/]+)\.lproj\//)?.[1];
+    assert.match(language!, /^en(?:[-_]US)?$/i, `Unexpected Chromium language resource: ${file.path}`);
+}
+assert.ok(files.some(file => file.path.endsWith("LICENSES.chromium.html") && file.bytes > 0), "Chromium license notices must ship");
 const artifacts: { name: string; bytes: number }[] = [];
 for (const name of await readdir("dist")) {
     if (/^Excord.*\.(zip|dmg|exe|AppImage)$/.test(name)) artifacts.push({ name, bytes: (await stat(join("dist", name))).size });
@@ -47,6 +55,7 @@ const report = { archiveBytes: (await stat(archive)).size, compilerBinaryBytes: 
     electronVersion: JSON.parse(await readFile("node_modules/electron/package.json", "utf8")).version,
     installedFileBytes: files.reduce((sum, file) => sum + file.bytes, 0),
     largestFiles: files.sort((a, b) => b.bytes - a.bytes).slice(0, 10), artifacts,
+    localeFiles, localeBytes: localeFiles.reduce((sum, file) => sum + file.bytes, 0),
     hasSourceMaps: false };
 await mkdir("test-results", { recursive: true });
 await writeFile("test-results/package.json", JSON.stringify(report, null, 2));

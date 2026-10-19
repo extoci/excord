@@ -116,6 +116,7 @@
     "productName": "Excord",
     "executableName": "excord",
     "compression": "maximum",
+    "electronLanguages": ["en-US"],
     "files": [
       "!*",
       "dist/js",
