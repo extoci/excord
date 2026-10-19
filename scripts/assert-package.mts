@@ -14,7 +14,7 @@ for (const file of ["dist/js/main.js", "dist/js/preload.js", "dist/js/renderer.j
     "node_modules/esbuild/lib/main.js", "LICENSE", "THIRD_PARTY_NOTICES.md"]) {
     assert.ok(entries.has(`/${file}`), `The release is missing ${file}`);
 }
-const desktopNotices = extractFile(archive, "dist/js/THIRD_PARTY_LICENSES.txt").toString();
+const desktopNotices = extractFile(archive, join("dist", "js", "THIRD_PARTY_LICENSES.txt")).toString();
 assert.match(desktopNotices, /Copyright \(c\) 2022 OpenAsar/, "The RPC worker's license notice must accompany its bundled code");
 assert.match(desktopNotices, /Permission is hereby granted/);
 assert.ok(![...entries].some(path => /arrpc-bun|\/static\/dist\/arrpc-/.test(path)), "A standalone RPC runtime must not ship");
