@@ -10,6 +10,8 @@ Native CI comparisons against the previous Excord build measured 97.3% less CPU 
 
 See the [measured app sizes](docs/app-size.md) for the current package-size reductions. Release builds include English Chromium resources only. Discord's interface language remains selectable; some browser menus and messages fall back to English.
 
+The next release enables the bundled Experiments plugin by default for new profiles. Existing saved plugin choices remain unchanged.
+
 ## Develop
 
 Install Bun 1.4 or later and Node 22 or later, then run:

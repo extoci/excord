@@ -62,12 +62,16 @@ try {
     console.log("[smoke] Renderer and native probe loaded");
     const initial = await page.evaluate(() => ({
         native: typeof ExcordNative,
+        experimentsEnabled: Vencord.Plugins.isPluginEnabled("Experiments"),
+        experimentsDefault: Vencord.Plugins.plugins.Experiments.enabledByDefault,
         local: ExcordNative.getLocalPlugins().plugins.map(plugin => ({ folder: plugin.folder, cacheHit: plugin.cacheHit })),
         moduleCount: Object.keys(ExcordModules).length,
         plugins: Object.keys(Vencord.Plugins.plugins).length,
         hasPatch: Vencord.WebpackPatcher.patches.some((patch: { plugin: string }) => patch.plugin === "ExcordRefreshProbe")
     }));
     assert.equal(initial.native, "object");
+    assert.equal(initial.experimentsEnabled, true, "Fresh profiles must enable Experiments");
+    assert.equal(initial.experimentsDefault, true);
     assert.ok(initial.plugins > 300, `Expected the bundled catalog, received ${initial.plugins} plugins`);
     assert.ok(initial.moduleCount > 100);
     assert.equal(initial.hasPatch, true);
@@ -76,6 +80,10 @@ try {
     assert.equal(await page.evaluate(() => VencordNative.pluginHelpers.ExcordRefreshProbe.settingsPath()), join(profile, "settings"));
     assert.equal(await page.evaluate(() => VesktopNative.settings.get().arRPCDisabled), true);
 
+    await page.evaluate(async () => {
+        Vencord.Settings.plugins.Experiments.enabled = false;
+        await VencordNative.settings.set(JSON.parse(JSON.stringify(Vencord.Settings)), "plugins.Experiments.enabled");
+    });
     await writeFile(join(plugin, "index.ts"), source("second"));
     await Promise.all([page.waitForEvent("domcontentloaded"), application.evaluate(({ Menu, BrowserWindow }) => {
         const item = Menu.getApplicationMenu()!.getMenuItemById("excord-refresh")!;
@@ -84,7 +92,8 @@ try {
     })]);
     await page.waitForFunction(() => (globalThis as Record<string, unknown>).__excordProbe === "second", undefined, { timeout: 30000 });
     await page.waitForFunction(() => (globalThis as Record<string, unknown>).__excordNativeProbe === "native:second", undefined, { timeout: 30000 });
-    console.log("[smoke] Menu refresh loaded changed source");
+    assert.equal(await page.evaluate(() => Vencord.Plugins.isPluginEnabled("Experiments")), false, "Refreshing must preserve a saved disabled choice");
+    console.log("[smoke] Menu refresh loaded changed source and preserved the Experiments choice");
 
     await Promise.all([page.waitForEvent("domcontentloaded"), page.evaluate(() => { void ExcordNative.refresh(); })]);
     await page.waitForFunction(() => ExcordNative.getLocalPlugins().plugins[0]?.cacheHit === true, undefined, { timeout: 30000 });

@@ -24,6 +24,8 @@ export function installExcordPlugins() {
         default: Record<string, PluginDefinition>;
         PluginMeta: Record<string, { folderName: string; userPlugin: boolean }>;
     };
+    // Set catalog defaults before initPluginManager reads settings; saved choices still win.
+    registry.default.Experiments.enabledByDefault = true;
     registry.default.ExcordEfficiency = createEfficiencyPlugin(modules);
     registry.PluginMeta.ExcordEfficiency = { folderName: "excord/efficiency", userPlugin: false };
     const issues: PluginIssue[] = [];

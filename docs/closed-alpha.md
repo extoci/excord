@@ -20,6 +20,8 @@ Open Excord and sign in through Discord's normal login page. Never send anyone a
 
 Excord settings appear inside Discord Settings → Excord Settings. The bundled plugin catalog is under Plugins. Personal plugins live in the folder opened by Excord Settings → Open plugins folder. Edit TypeScript and press Cmd+R or Ctrl+R to compile changed plugins and reload.
 
+Starting with the next release after alpha.2, the bundled Experiments plugin will be enabled by default for new profiles. Saved plugin choices take precedence on upgrades. Enable it under Settings → Plugins → Experiments and refresh if your existing profile has it disabled. Enabling the plugin exposes Discord's experiments controls; it does not turn every experiment on.
+
 Chromium resources are English-only. Discord's own interface language remains selectable, but some browser menus and messages fall back to English.
 
 Save power while hidden is enabled in Excord Settings under System Startup & Performance. Hidden idle windows can pause interface animation. Connecting or active WebRTC connections, pending capture requests, and live camera/screen tracks request full speed. You can turn this setting off without restarting. If a call ends while the window stays hidden, the current Electron runtime defers restoring power saving until you show the window again. This avoids briefly showing or flashing a hidden window.
