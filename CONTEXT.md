@@ -12,6 +12,8 @@ After a build, `bun run test:rpc` checks the Node RPC worker. `bun run test:elec
 
 `node --import tsx scripts/quit-smoke.mts --packaged --refresh` checks normal executable shutdown after five refreshes without an inspector. `--archive --refresh` checks the ASAR the same way. These checks fail on forced shutdown. Windows browser automation has a separate, documented teardown workaround after a recorded quit event; keep the independent shutdown checks strict.
 
+When a browser test reuses a profile, wait for the child process's exit event before relaunching. A completed `taskkill` call alone does not establish process exit. Recovery CI repeats the full sequence twice per platform. Discord navigation waits allow 30 seconds; these timeouts are test bounds, not startup performance measurements.
+
 The Excord settings component has a standalone development preview at `bun run scripts/preview-control.mts`. Its banner identifies its sample metrics and fake folder operations. It uses the actual component, but it is not a substitute for the Electron tests.
 
 ## Main modules
