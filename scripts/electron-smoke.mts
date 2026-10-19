@@ -158,6 +158,9 @@ try {
     // Finish the inspector evaluation before requesting quit. On Windows, quitting while
     // the debugger is attached can leave Electron alive after its quit event.
     await application.evaluate(({ app }) => {
+        // The separate quit smoke checks the unmodified executable and ASAR after five
+        // refreshes. Windows' automation host can otherwise remain alive after quit.
+        if (process.platform === "win32") app.once("quit", () => process.exit(0));
         setTimeout(() => {
             process.getBuiltinModule("inspector").close();
             app.quit();
@@ -169,5 +172,5 @@ try {
     clearTimeout(shutdown);
     clearTimeout(deadline);
     await rm(profile, { recursive: true, force: true, maxRetries: 5 });
-    assert.equal(forcedShutdown, false, "Electron must quit without a forced process kill");
+    assert.equal(forcedShutdown, false, "Browser automation cleanup exceeded its deadline");
 }

@@ -10,6 +10,8 @@ The Native builds workflow runs on pushes to main and on pull requests. It check
 
 Each job then builds its installer and archive, checks the package contents, and repeats the Electron plugin test from the packaged ASAR. These checks catch failures that a development launch misses, including a missing compiler executable or an ASAR path that cannot execute a subprocess.
 
+Separate shutdown tests launch the actual packaged executable and the ASAR without an inspector. They refresh five times, request normal `app.quit()`, require the full quit lifecycle, and fail if a process kill is necessary. Under Playwright on Windows, Electron can remain alive after its quit event even after detaching the Node inspector. The browser test therefore calls `process.exit(0)` after that event during Windows teardown. This workaround exists only in the test, and does not replace the independent normal-shutdown checks.
+
 The primary artifacts are an Apple silicon DMG and ZIP, plus a Windows x64 installer and ZIP. The macOS package declares macOS 27 as its minimum system version. CI currently uses GitHub's macOS 26 Apple silicon runner to build and smoke-test the Electron runtime; testing physical device behavior on macOS 27 remains separate.
 
 CI artifacts stay private with the repository. Verification artifacts include the smoke-test report and a screenshot of the logged-out app. They contain no Discord credentials.
