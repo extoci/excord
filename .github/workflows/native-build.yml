@@ -85,6 +85,9 @@ jobs:
       - name: Verify safe mode, offline recovery, and private diagnostics
         timeout-minutes: 4
         run: node --import tsx scripts/recovery-smoke.mts
+      - name: Repeat profile reuse and recovery checks
+        timeout-minutes: 4
+        run: node --import tsx scripts/recovery-smoke.mts
       - uses: actions/upload-artifact@v4
         if: always()
         with:

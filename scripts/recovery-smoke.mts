@@ -51,6 +51,7 @@ const environment = Object.fromEntries(
 delete environment.ELECTRON_RUN_AS_NODE;
 const results: Record<string, unknown> = {};
 let current: ElectronApplication | undefined;
+let startupOutput = "";
 const deadline = setTimeout(() => {
   current?.process().kill();
   console.error("Recovery test deadline exceeded");
@@ -59,6 +60,16 @@ const deadline = setTimeout(() => {
 deadline.unref();
 
 async function close(application: ElectronApplication, name: string) {
+  const child = application.process();
+  let processExited = child.exitCode !== null || child.signalCode !== null;
+  const exited = processExited
+    ? Promise.resolve()
+    : new Promise<void>((resolve) =>
+        child.once("exit", () => {
+          processExited = true;
+          resolve();
+        }),
+      );
   const marker = join(profile, `quit-${name}`);
   await application.evaluate(({ app }, marker) => {
     app.once("quit", () =>
@@ -66,6 +77,7 @@ async function close(application: ElectronApplication, name: string) {
     );
   }, marker);
   let forced = false;
+  let exitTimeout: ReturnType<typeof setTimeout> | undefined;
   let finishTimeout: () => void = () => {};
   const timedOut = new Promise<void>((resolve) => {
     finishTimeout = resolve;
@@ -82,12 +94,18 @@ async function close(application: ElectronApplication, name: string) {
         );
       else application.process().kill();
     } catch {}
-    finishTimeout();
+    // taskkill returning is not proof the process has released the profile lock.
+    exitTimeout = setTimeout(() => {
+      forced = true;
+      finishTimeout();
+    }, 5000);
+    void exited.then(finishTimeout);
   }, 10000);
   try {
-    await Promise.race([application.close(), timedOut]);
+    await Promise.race([Promise.all([application.close(), exited]), timedOut]);
   } finally {
     clearTimeout(timeout);
+    clearTimeout(exitTimeout);
     current = undefined;
   }
   assert.ok(
@@ -95,8 +113,11 @@ async function close(application: ElectronApplication, name: string) {
     "Shutdown must reach quit; normal executable shutdown is checked independently",
   );
   assert.ok(existsSync(marker), "Missing quit marker");
+  assert.ok(processExited, "The process must exit before reusing its profile");
+  console.log(`[recovery] ${name} process exited before profile reuse`);
 }
 async function launch(safe: boolean) {
+  startupOutput = "";
   current = await _electron.launch({
     executablePath: require("electron"),
     args: [
@@ -109,6 +130,10 @@ async function launch(safe: boolean) {
     env: environment,
     timeout: 30000,
   });
+  for (const stream of [current.process().stdout, current.process().stderr])
+    stream?.on("data", (data) => {
+      startupOutput = (startupOutput + data).slice(-12000);
+    });
   return current;
 }
 try {
@@ -252,6 +277,14 @@ try {
     JSON.stringify(results, null, 2),
   );
   console.log("Alpha recovery checks passed", results);
+} catch (error) {
+  console.error("[recovery] Failure state", {
+    processExitCode: current?.process().exitCode,
+    processSignal: current?.process().signalCode,
+    windows: current?.windows().length,
+    startupOutput,
+  });
+  throw error;
 } finally {
   clearTimeout(deadline);
   if (current) {
