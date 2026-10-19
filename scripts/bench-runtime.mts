@@ -17,6 +17,7 @@ const { values } = parseArgs({
     output: { type: "string", default: "test-results/runtime-benchmark.json" },
     rounds: { type: "string", default: "5" },
     seconds: { type: "string", default: "5" },
+    settle: { type: "string", default: "30" },
     headless: { type: "boolean", default: false },
     profile: { type: "boolean", default: false },
     executable: { type: "string" },
@@ -28,6 +29,8 @@ const { values } = parseArgs({
 });
 const rounds = Number(values.rounds);
 const sampleMs = Number(values.seconds) * 1000;
+const settleMs = Number(values.settle) * 1000;
+assert.ok(Number.isFinite(settleMs) && settleMs >= 5000 && settleMs <= 120000);
 assert.ok(Number.isInteger(rounds) && rounds > 0 && rounds <= 30);
 assert.ok(sampleMs >= 1000 && sampleMs <= 60000);
 const require = createRequire(import.meta.url);
@@ -53,7 +56,7 @@ const deadline = setTimeout(
     console.error("Benchmark exceeded its deadline");
     process.exit(1);
   },
-  rounds * variants.length * (sampleMs * 5 + 90000),
+  rounds * variants.length * (sampleMs * 5 + settleMs + 90000),
 );
 deadline.unref();
 
@@ -188,7 +191,7 @@ try {
         { timeout: 60000 },
       );
       const loginMs = performance.now() - started;
-      await delay(5000);
+      await delay(settleMs);
       // Do this after navigation: Playwright re-applies the override to new renderer targets.
       await useNativeVisibility(page);
       const idleBefore = await metrics(application);
@@ -337,6 +340,7 @@ try {
                 .digest("hex")
             : undefined,
           sampleMs,
+          settleMs,
         },
         variants,
         results,
