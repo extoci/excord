@@ -57,7 +57,10 @@ jobs:
         run: bun run check:package
       - name: Verify shutdown without an inspector
         timeout-minutes: 2
-        run: node --import tsx scripts/quit-smoke.mts --packaged
+        run: node --import tsx scripts/quit-smoke.mts --packaged --refresh
+      - name: Verify archive shutdown without an inspector
+        timeout-minutes: 2
+        run: node --import tsx scripts/quit-smoke.mts --archive --refresh
       - name: Exercise local plugins from the packaged archive
         timeout-minutes: 5
         run: bun run test:electron --packaged

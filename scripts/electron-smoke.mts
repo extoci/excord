@@ -135,9 +135,22 @@ try {
                 console.error(execFileSync("powershell.exe", ["-NoProfile", "-Command", "Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'electron|esbuild|Excord' } | Select-Object Name,ProcessId,ParentProcessId | ConvertTo-Json"], { encoding: "utf8", timeout: 5000 }));
             } catch (error) { console.error(error); }
         }
-        application.process().kill();
+        if (process.platform === "win32" && application.process().pid) {
+            try { execFileSync("taskkill", ["/pid", String(application.process().pid), "/T", "/F"], { timeout: 5000 }); }
+            catch { /* The process may have exited while diagnostics were being collected. */ }
+        } else application.process().kill();
     }, 10000);
     shutdown.unref();
+    const exited = new Promise<void>(resolve => application.process().once("exit", () => resolve()));
+    // Finish the inspector evaluation before requesting quit. On Windows, quitting while
+    // the debugger is attached can leave Electron alive after its quit event.
+    await application.evaluate(({ app }) => {
+        setTimeout(() => {
+            process.getBuiltinModule("inspector").close();
+            app.quit();
+        }, 0);
+    }).catch(() => {});
+    await exited;
     await application.close().catch(() => {});
     console.log("[smoke] Electron closed");
     clearTimeout(shutdown);
