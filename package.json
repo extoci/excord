@@ -1,7 +1,7 @@
 {
   "name": "excord",
   "desktopName": "excord",
-  "version": "0.1.0",
+  "version": "0.1.1-alpha.1",
   "private": true,
   "description": "An opinionated Discord desktop client with refreshable TypeScript plugins",
   "keywords": [],
@@ -213,7 +213,8 @@
     "nsis": {
       "artifactName": "${productName}-Setup-${version}-${arch}.${ext}",
       "include": "build/installer.nsh",
-      "oneClick": false
+      "oneClick": false,
+      "runAfterFinish": false
     },
     "win": {
       "icon": "build/icon.ico",

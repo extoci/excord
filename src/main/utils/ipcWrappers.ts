@@ -5,12 +5,12 @@
  */
 
 import { ipcMain, IpcMainEvent, IpcMainInvokeEvent, WebFrameMain } from "electron";
-import { DISCORD_HOSTNAMES } from "main/constants";
 import { IpcEvents, UpdaterIpcEvents } from "shared/IpcEvents";
+import { isDiscordOrigin } from "../../excord/origin";
 
 export function validateSender(frame: WebFrameMain | null, event: string) {
     if (!frame) throw new Error(`ipc[${event}]: No sender frame`);
-    if (!frame.url) return;
+    if (!frame.url || frame.parent) throw new Error(`ipc[${event}]: Main frame required`);
 
     try {
         var { hostname, protocol } = new URL(frame.url);
@@ -18,17 +18,19 @@ export function validateSender(frame: WebFrameMain | null, event: string) {
         throw new Error(`ipc[${event}]: Invalid URL ${frame.url}`);
     }
 
-    if (protocol === "file:" || protocol === "vesktop:" || protocol === "excord:") return;
+    if (protocol === "excord:" && hostname === "static" && new URL(frame.url).pathname.startsWith("/views/")) return;
 
-    if (protocol !== "https:" || !DISCORD_HOSTNAMES.includes(hostname)) {
+    if (!isDiscordOrigin(frame.url)) {
         throw new Error(`ipc[${event}]: Disallowed hostname ${hostname}`);
     }
 }
 
 export function handleSync(event: IpcEvents | UpdaterIpcEvents, cb: (e: IpcMainEvent, ...args: any[]) => any) {
     ipcMain.on(event, (e, ...args) => {
-        validateSender(e.senderFrame, event);
-        e.returnValue = cb(e, ...args);
+        try {
+            validateSender(e.senderFrame, event);
+            e.returnValue = cb(e, ...args);
+        } catch { e.returnValue = undefined; console.warn(`[Excord] Rejected or failed synchronous IPC: ${event}`); }
     });
 }
 

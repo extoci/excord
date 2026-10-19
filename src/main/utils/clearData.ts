@@ -5,13 +5,13 @@
  */
 
 import { app, BrowserWindow, dialog } from "electron";
-import { rm } from "fs/promises";
 import { DATA_DIR, MessageBoxChoice } from "main/constants";
+import { backupSettingsForReset } from "./settingsFile";
 
 export async function clearData(win: BrowserWindow) {
     const { response } = await dialog.showMessageBox(win, {
         message: "Are you sure you want to reset Excord?",
-        detail: "This will log you out, clear caches and reset all your settings!\n\nExcord will automatically restart after this operation.",
+        detail: "This logs you out and resets settings and QuickCSS. Existing settings are backed up in your profile's backups folder. Personal plugin and theme folders are kept.\n\nExcord will restart. Use safe mode instead if you want to keep your login.",
         buttons: ["Yes", "No"],
         cancelId: MessageBoxChoice.Cancel,
         defaultId: MessageBoxChoice.Default,
@@ -20,12 +20,10 @@ export async function clearData(win: BrowserWindow) {
 
     if (response === MessageBoxChoice.Cancel) return;
 
-    win.close();
-
     await win.webContents.session.clearStorageData();
     await win.webContents.session.clearCache();
     await win.webContents.session.clearCodeCaches({});
-    await rm(DATA_DIR, { force: true, recursive: true });
+    backupSettingsForReset(DATA_DIR);
 
     app.relaunch();
     app.quit();

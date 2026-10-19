@@ -21,6 +21,8 @@ import { registerScreenShareHandler } from "./screenShare";
 import { Settings, State } from "./settings";
 import { setAsDefaultProtocolClient } from "./utils/setAsDefaultProtocolClient";
 import { isDeckGameMode } from "./utils/steamOS";
+import { showStartupFailure } from "./recovery";
+import { isSafeMode } from "../excord/mode";
 
 console.log("Excord v" + app.getVersion());
 
@@ -57,7 +59,7 @@ function init() {
     app.commandLine.removeSwitch("enable-features");
     app.commandLine.removeSwitch("disable-features");
 
-    if (!hardwareAcceleration || process.argv.includes("--disable-gpu")) {
+    if (isSafeMode || !hardwareAcceleration || process.argv.includes("--disable-gpu")) {
         enableHardwareAcceleration = false;
         app.disableHardwareAcceleration();
     } else {
@@ -76,7 +78,7 @@ function init() {
         app.commandLine.appendSwitch("disable-smooth-scrolling");
     }
 
-    if (launchArguments) {
+    if (typeof launchArguments === "string" && launchArguments && !isSafeMode) {
         const args = launchArguments.match(/(?:[^\s"]+|"[^"]*")+/g) || [];
         for (const arg of args) {
             const cleanArg = arg.replace(/^["']|["']$/g, "");
@@ -139,10 +141,10 @@ function init() {
         registerScreenShareHandler();
         registerMediaPermissionsHandler();
 
-        bootstrap();
+        void bootstrap().catch(showStartupFailure);
 
         app.on("activate", () => {
-            if (BrowserWindow.getAllWindows().length === 0) createWindows();
+            if (BrowserWindow.getAllWindows().length === 0) void createWindows().catch(showStartupFailure);
         });
     });
 }
@@ -155,8 +157,10 @@ async function bootstrap() {
 }
 
 export let darwinURL: string | undefined;
-app.on("open-url", (_, url) => {
+app.on("open-url", (event, url) => {
+    event.preventDefault();
     darwinURL = url;
+    if (app.isReady()) void import("./mainWindow").then(({ mainWin, loadUrl }) => { if (mainWin && !mainWin.isDestroyed()) loadUrl(url); });
 });
 
 app.on("window-all-closed", () => {

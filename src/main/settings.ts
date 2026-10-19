@@ -4,14 +4,14 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { mkdirSync, readFileSync, writeFileSync } from "fs";
-import { dirname, join } from "path";
+import { join } from "path";
 import { DefaultExcordSettings } from "shared/defaultSettings";
 import type { Settings as TSettings, State as TState } from "shared/settings";
 import { SettingsStore } from "shared/utils/SettingsStore";
 
 import { DATA_DIR, VENCORD_SETTINGS_FILE } from "./constants";
 import { mergeDefaults } from "./utils/mergeDefaults";
+import { readSettingsFile, writeSettingsFile } from "./utils/settingsFile";
 
 const SETTINGS_FILE = join(DATA_DIR, "settings.json");
 const STATE_FILE = join(DATA_DIR, "state.json");
@@ -25,25 +25,24 @@ function migrateSettings(settings: any) {
 
 function loadSettings<T extends object = any>(file: string, name: string, defaults?: T) {
     let settings = {} as T;
+    let readFailed = false;
     try {
-        const content = readFileSync(file, "utf8");
-        try {
-            settings = JSON.parse(content);
-        } catch (err) {
-            console.error(`Failed to parse ${name}.json:`, err);
-        }
-    } catch {}
+        settings = readSettingsFile(file) as T;
+    } catch (error) { readFailed = true; console.error(`[Excord] Cannot read ${name}; original file left untouched.`, error); }
 
     if (defaults) {
         migrateSettings(settings);
+        for (const key of Object.keys(defaults) as (keyof T)[]) {
+            if (settings[key] != null && typeof settings[key] !== typeof defaults[key]) settings[key] = defaults[key];
+        }
         mergeDefaults(settings, defaults);
     }
 
     const store = new SettingsStore(settings);
     store.addGlobalChangeListener(o => {
+        if (readFailed) return;
         try {
-            mkdirSync(dirname(file), { recursive: true });
-            writeFileSync(file, JSON.stringify(o, null, 4));
+            writeSettingsFile(file, o);
         } catch (err) {
             console.error(`Failed to save settings to ${name}.json:`, err);
         }

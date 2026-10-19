@@ -5,5 +5,6 @@ export const ExcordChannels = {
     createPlugin: "excord:create-plugin",
     refresh: "excord:refresh",
     diagnostics: "excord:diagnostics",
-    openSettings: "excord:open-settings"
+    openSettings: "excord:open-settings",
+    exportDiagnostics: "excord:export-diagnostics"
 } as const;

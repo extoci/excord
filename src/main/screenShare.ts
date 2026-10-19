@@ -13,6 +13,7 @@ import { isWayland } from "./constants";
 import { getPlatformSpoofInfo } from "./gnuSpoofing";
 import { sendRendererCommand } from "./ipcCommands";
 import { handle } from "./utils/ipcWrappers";
+import { isDiscordOrigin } from "../excord/origin";
 
 const supportsLoopbackWithoutChrome = process.platform === "win32" && Number(release().split(".").pop()) >= 19045;
 
@@ -29,6 +30,7 @@ export function registerScreenShareHandler() {
     });
 
     session.defaultSession.setDisplayMediaRequestHandler(async (request, callback) => {
+        if (!isDiscordOrigin(request.securityOrigin) || !request.frame || request.frame.parent) return callback({});
         // request full resolution on wayland right away because we always only end up with one result anyway
         const width = isWayland ? 1920 : 176;
         const sources = await desktopCapturer

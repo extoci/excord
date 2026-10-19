@@ -37,11 +37,14 @@ import { addSplashLog, createSplashWindow, updateSplashMessage } from "./splash"
 import { darwinURL } from "./startup";
 import { destroyTray, initTray } from "./tray";
 import { clearData } from "./utils/clearData";
-import { makeLinksOpenExternally } from "./utils/makeLinksOpenExternally";
+import { handleExternalUrl, makeLinksOpenExternally } from "./utils/makeLinksOpenExternally";
+import { isDiscordOrigin } from "../excord/origin";
 import { applyDeckKeyboardFix, askToApplySteamLayout, isDeckGameMode } from "./utils/steamOS";
 import { downloadVencordAsar, ensureVencordFiles } from "./utils/vencordLoader";
 import { VENCORD_DIR } from "./vencordDir";
 import { attachExcord, prepareLocalPlugins, refreshExcord } from "../excord/service";
+import { isSafeMode } from "../excord/mode";
+import { exportDiagnostics, recordRecoveryEvent, restartExcord } from "./recovery";
 
 let isQuitting = false;
 
@@ -90,6 +93,17 @@ function initMenuBar(win: BrowserWindow) {
             click: createAboutWindow
         },
         {
+            id: "excord-safe-mode",
+            label: isSafeMode ? "Restart with plugins enabled" : "Restart in safe mode",
+            accelerator: "CmdOrCtrl+Alt+Shift+R",
+            click: () => restartExcord(!isSafeMode)
+        },
+        {
+            id: "excord-export-diagnostics",
+            label: "Export diagnostics…",
+            click: () => { void exportDiagnostics(win).catch(error => console.error("[Excord] Diagnostic export failed", error)); }
+        },
+        {
             label: "Reset Excord",
             async click() {
                 await clearData(win);
@@ -113,6 +127,7 @@ function initMenuBar(win: BrowserWindow) {
                   },
                   {
                       label: "Settings",
+                      enabled: !isSafeMode,
                       accelerator: "CmdOrCtrl+,",
                       async click() {
                           sendRendererCommand(IpcCommands.NAVIGATE_SETTINGS);
@@ -255,7 +270,8 @@ function initSettingsListeners(win: BrowserWindow) {
     });
 
     addSettingsListener("enableMenu", enabled => {
-        win.setAutoHideMenuBar(enabled ?? false);
+        win.setAutoHideMenuBar(!enabled);
+        win.setMenuBarVisibility(!!enabled || isSafeMode);
     });
 
     addSettingsListener("spellCheckLanguages", languages => initSpellCheckLanguages(win, languages));
@@ -309,12 +325,15 @@ function getWindowBoundsOptions(): BrowserWindowConstructorOptions {
 
     // We want the default window behaviour to apply in game mode since it expects everything to be fullscreen and maximized.
     if (isDeckGameMode) return {};
+    if (isSafeMode) return { width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT, minWidth: MIN_WIDTH, minHeight: MIN_HEIGHT };
 
-    const { x, y, width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT } = State.store.windowBounds ?? {};
+    const { x, y, width: savedWidth, height: savedHeight } = State.store.windowBounds ?? {};
+    const width = typeof savedWidth === "number" && Number.isFinite(savedWidth) && savedWidth > 0 && savedWidth < 32768 ? savedWidth : DEFAULT_WIDTH;
+    const height = typeof savedHeight === "number" && Number.isFinite(savedHeight) && savedHeight > 0 && savedHeight < 32768 ? savedHeight : DEFAULT_HEIGHT;
 
     const options = { width, height } as BrowserWindowConstructorOptions;
 
-    if (x != null && y != null) {
+    if (Number.isFinite(x) && Number.isFinite(y) && x != null && y != null) {
         function isInBounds(rect: Rectangle, display: Rectangle) {
             return !(
                 rect.x + rect.width < display.x ||
@@ -355,11 +374,11 @@ function buildBrowserWindowOptions(): BrowserWindowConstructorOptions {
 
     const { transparent, macosVibrancyStyle } = VencordSettings.store;
 
-    const frameless = !nativeTitleBar;
+    const frameless = !nativeTitleBar && !isSafeMode;
     const backgroundColor = splashTheming ? splashBackground : nativeTheme.shouldUseDarkColors ? "#313338" : "#ffffff";
 
     const options: BrowserWindowConstructorOptions = {
-        show: !Settings.store.enableSplashScreen && !CommandLine.values["start-minimized"],
+        show: isSafeMode || (!Settings.store.enableSplashScreen && !CommandLine.values["start-minimized"]),
         backgroundColor,
         ...(process.platform === "win32"
             ? { icon: join(STATIC_DIR, "icon.ico") }
@@ -371,7 +390,7 @@ function buildBrowserWindowOptions(): BrowserWindowConstructorOptions {
             sandbox: true,
             contextIsolation: true,
             devTools: true,
-            preload: join(__dirname, "preload.js"),
+            ...(!isSafeMode && { preload: join(__dirname, "preload.js") }),
             spellcheck: true,
             ...(Settings.store.middleClickAutoscroll && {
                 enableBlinkFeatures: "MiddleClickAutoscroll"
@@ -380,18 +399,18 @@ function buildBrowserWindowOptions(): BrowserWindowConstructorOptions {
             backgroundThrottling: false
         },
         frame: !frameless,
-        autoHideMenuBar: enableMenu,
+        autoHideMenuBar: !enableMenu && !isSafeMode,
         hasShadow: enableShadow,
         roundedCorners: enableRoundedCorners,
         ...getWindowBoundsOptions()
     };
 
-    if (transparent && process.platform !== "darwin") {
+    if (!isSafeMode && transparent && process.platform !== "darwin") {
         options.transparent = true;
         options.backgroundColor = "#00000000";
     }
 
-    if (transparencyOption && transparencyOption !== "none") {
+    if (!isSafeMode && transparencyOption && transparencyOption !== "none") {
         options.backgroundColor = "#00000000";
         options.backgroundMaterial = transparencyOption;
 
@@ -404,7 +423,7 @@ function buildBrowserWindowOptions(): BrowserWindowConstructorOptions {
         options.title = "Excord";
     }
 
-    if (process.platform === "darwin") {
+    if (process.platform === "darwin" && !isSafeMode) {
         options.titleBarStyle = "hidden";
         options.trafficLightPosition = { x: 10, y: 10 };
 
@@ -428,11 +447,11 @@ function createMainWindow() {
     attachExcord(win);
 
     win.webContents.setMaxListeners(15);
-    win.setMenuBarVisibility(false);
+    win.setMenuBarVisibility(isSafeMode || !!Settings.store.enableMenu);
 
     addSplashLog();
 
-    if (process.platform === "darwin" && !Settings.store.nativeTitleBar) win.setWindowButtonVisibility(false);
+    if (process.platform === "darwin" && !Settings.store.nativeTitleBar && !isSafeMode) win.setWindowButtonVisibility(false);
     if (process.platform !== "win32" && CommandLine.values["windows-spoof"]) {
         spoofGnu(win);
     }
@@ -458,7 +477,20 @@ function createMainWindow() {
         initTray(win, q => (isQuitting = q));
 
     initMenuBar(win);
+    win.webContents.on("did-fail-load", (_event, code, _description, url, isMainFrame) => {
+        if (isMainFrame && code !== -3 && isDiscordOrigin(url) && !isQuitting && !win.isDestroyed()) {
+            recordRecoveryEvent("navigation-failed", code);
+            void win.loadURL("excord://static/views/offline.html").catch(() => {});
+        }
+    });
     makeLinksOpenExternally(win);
+    win.webContents.on("will-navigate", (event, url) => {
+        if (win.webContents.getURL().startsWith("excord://static/views/offline.html") && url === "https://discord.com/app") {
+            event.preventDefault(); loadUrl(undefined);
+        } else if (!isDiscordOrigin(url)) {
+            event.preventDefault(); handleExternalUrl(url);
+        }
+    });
     initSettingsListeners(win);
     initSpellCheck(win);
     initDevtoolsListeners(win);
@@ -489,21 +521,17 @@ export function loadUrl(uri: string | undefined) {
     mainWin
         .loadURL(`https://${subdomain}discord.com/${uri ? new URL(uri).pathname.slice(1) || "app" : "app"}`)
         .then(() => AppEvents.emit("appLoaded"))
-        .catch(error => retryUrl(error.url, error.code));
-}
-
-const retryDelay = 1000;
-function retryUrl(url: string, description: string) {
-    console.log(`retrying in ${retryDelay}ms`);
-    updateSplashMessage(`Failed to load Discord: ${description}`);
-    setTimeout(() => loadUrl(url), retryDelay);
+        .catch(error => {
+            if (mainWin.isDestroyed() || isQuitting || error.code === "ERR_ABORTED") return;
+            console.warn("[Excord] Navigation failed:", error.code);
+        });
 }
 
 export async function createWindows() {
     const startMinimized = CommandLine.values["start-minimized"];
 
     let splash: BrowserWindow | undefined;
-    if (Settings.store.enableSplashScreen) {
+    if (Settings.store.enableSplashScreen && !isSafeMode) {
         splash = await createSplashWindow(startMinimized);
 
         // SteamOS letterboxes and scales it terribly, so just full screen it
@@ -512,9 +540,11 @@ export async function createWindows() {
     }
 
     addSplashLog();
-    await ensureVencordFiles();
-    runVencordMain();
-    await prepareLocalPlugins();
+    if (!isSafeMode) {
+        await ensureVencordFiles();
+        runVencordMain();
+        await prepareLocalPlugins();
+    }
 
     addSplashLog();
     mainWin = createMainWindow();
@@ -549,9 +579,14 @@ export async function createWindows() {
         }
     });
 
-    mainWin.webContents.on("render-process-gone", (event, details) => console.log(details));
-    mainWin.webContents.on("did-finish-load", restoreArRPCActivities);
-    setupArRPC();
-    initArRPC();
-    if (isLinux) initKeybinds();
+    mainWin.webContents.on("render-process-gone", (_event, details) => {
+        recordRecoveryEvent("renderer-gone", details.exitCode);
+        if (!isQuitting) void mainWin.loadURL("excord://static/views/offline.html").catch(() => {});
+    });
+    if (!isSafeMode) {
+        mainWin.webContents.on("did-finish-load", restoreArRPCActivities);
+        setupArRPC();
+        void initArRPC();
+        if (isLinux) initKeybinds();
+    }
 }

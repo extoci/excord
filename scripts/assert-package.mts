@@ -11,7 +11,7 @@ const entries = new Set(listPackage(archive).map(path => path.replaceAll("\\", "
 for (const file of ["dist/js/main.js", "dist/js/preload.js", "dist/js/renderer.js", "dist/js/arRpcWorker.js",
     "static/runtime/main.js", "static/runtime/preload.js", "static/runtime/renderer.js", "static/runtime/renderer.css",
     "static/runtime/modules.json", "static/runtime/THIRD_PARTY_LICENSES.txt", "dist/js/THIRD_PARTY_LICENSES.txt",
-    "node_modules/esbuild/lib/main.js", "LICENSE", "THIRD_PARTY_NOTICES.md"]) {
+    "node_modules/esbuild/lib/main.js", "static/views/offline.html", "LICENSE", "THIRD_PARTY_NOTICES.md"]) {
     assert.ok(entries.has(`/${file}`), `The release is missing ${file}`);
 }
 const desktopNotices = extractFile(archive, join("dist", "js", "THIRD_PARTY_LICENSES.txt")).toString();

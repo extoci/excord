@@ -8,15 +8,19 @@ import { STATIC_DIR } from "../shared/paths";
 import { ExcordChannels } from "./channels";
 import { createLocalPlugin, LocalPluginCompiler } from "./compiler";
 import { isDiscordOrigin } from "./origin";
+import { isSafeMode } from "./mode";
 import type { LocalPluginSnapshot, PerformanceSnapshot, PluginIssue, RuntimeModuleManifest } from "./types";
 
-const manifest: RuntimeModuleManifest = JSON.parse(readFileSync(join(STATIC_DIR, "runtime/modules.json"), "utf8"));
+let manifest: RuntimeModuleManifest | undefined;
+function getManifest(): RuntimeModuleManifest {
+    return manifest ??= JSON.parse(readFileSync(join(STATIC_DIR, "runtime/modules.json"), "utf8"));
+}
 export const localPluginsDirectory = join(DATA_DIR, "plugins");
-const compiler = new LocalPluginCompiler(localPluginsDirectory, join(DATA_DIR, "plugin-cache"), manifest);
-app.on("will-quit", () => compiler.shutdown());
+let compiler: LocalPluginCompiler | undefined;
+app.on("will-quit", () => compiler?.shutdown());
 const requireNative = createRequire(__filename);
 // spawn() cannot execute a path inside ASAR. Point esbuild at its unpacked binary.
-if (STATIC_DIR.includes(".asar") && !process.env.ESBUILD_BINARY_PATH) {
+if (!isSafeMode && STATIC_DIR.includes(".asar") && !process.env.ESBUILD_BINARY_PATH) {
     const binary = process.platform === "win32" ? `@esbuild/win32-${process.arch}/esbuild.exe`
         : `@esbuild/${process.platform}-${process.arch}/bin/esbuild`;
     process.env.ESBUILD_BINARY_PATH = requireNative.resolve(binary).replace(/\.asar([/\\])/, ".asar.unpacked$1");
@@ -39,6 +43,8 @@ function assertSender(frame: WebFrameMain | null) {
 }
 
 export async function prepareLocalPlugins() {
+    if (isSafeMode) return;
+    compiler ??= new LocalPluginCompiler(localPluginsDirectory, join(DATA_DIR, "plugin-cache"), getManifest());
     const native: NativeRegistry = requireNative(join(STATIC_DIR, "runtime/main.js"));
     globalThis.ExcordNativeModules = native.modules;
     for (const [name, entry] of nativePlugins) {
@@ -68,8 +74,13 @@ export async function prepareLocalPlugins() {
 
 export function refreshExcord(win = currentWindow, ignoreCache = false): Promise<void> {
     if (!win || win.isDestroyed()) return Promise.resolve();
-    return refreshInProgress ??= prepareLocalPlugins().then(() => {
+    return refreshInProgress ??= prepareLocalPlugins().then(async () => {
         if (!win.isDestroyed()) {
+            if (!isDiscordOrigin(win.webContents.getURL())) {
+                const { loadUrl } = await import("../main/mainWindow");
+                loadUrl(undefined);
+                return;
+            }
             if (ignoreCache) win.webContents.reloadIgnoringCache();
             else win.webContents.reload();
         }
@@ -95,7 +106,10 @@ export function getDiagnostics(): PerformanceSnapshot {
         processes: app.getAppMetrics().map(metric => ({ type: metric.type, cpuPercent: metric.cpu.percentCPUUsage,
             memoryMiB: metric.memory.workingSetSize / 1024 })),
         localPlugins: { ...snapshot, plugins: snapshot.plugins.map(plugin => ({ ...plugin, code: "" })) },
-        upstream: { commit: manifest.revision, version: String(manifest.defines.VERSION) }
+        upstream: (() => {
+            try { const value = getManifest(); return { commit: value.revision, version: String(value.defines.VERSION) }; }
+            catch { return { commit: "unavailable", version: "unavailable" }; }
+        })()
     };
 }
 
@@ -127,6 +141,11 @@ ipcMain.handle(ExcordChannels.createPlugin, async (event, name: unknown) => {
 });
 ipcMain.handle(ExcordChannels.refresh, async event => { assertSender(event.senderFrame); await refreshExcord(); });
 ipcMain.handle(ExcordChannels.diagnostics, event => { assertSender(event.senderFrame); return getDiagnostics(); });
+ipcMain.handle(ExcordChannels.exportDiagnostics, async event => {
+    assertSender(event.senderFrame);
+    const { exportDiagnostics } = await import("../main/recovery");
+    return exportDiagnostics(currentWindow);
+});
 ipcMain.handle(ExcordChannels.openSettings, async event => {
     assertSender(event.senderFrame);
     await currentWindow?.webContents.executeJavaScript('Vencord.Webpack.Common.SettingsRouter.openUserSettings("ExcordSettings")');

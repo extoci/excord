@@ -43,4 +43,5 @@ export interface ExcordNativeApi {
     refresh(): Promise<void>;
     diagnostics(): Promise<PerformanceSnapshot>;
     openSettings(): Promise<void>;
+    exportDiagnostics(): Promise<boolean>;
 }

@@ -71,12 +71,18 @@ jobs:
       - name: Verify archive shutdown without an inspector
         timeout-minutes: 2
         run: node --import tsx scripts/quit-smoke.mts --archive --refresh
+      - name: Verify installer, reinstallation, and session persistence
+        timeout-minutes: 7
+        run: node --import tsx scripts/install-smoke.mts
       - name: Exercise local plugins in Electron
         timeout-minutes: 5
         run: bun run test:electron
       - name: Exercise local plugins from the packaged archive
         timeout-minutes: 5
         run: bun run test:electron --packaged
+      - name: Verify safe mode, offline recovery, and private diagnostics
+        timeout-minutes: 4
+        run: node --import tsx scripts/recovery-smoke.mts
       - uses: actions/upload-artifact@v4
         if: always()
         with:

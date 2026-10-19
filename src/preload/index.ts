@@ -8,8 +8,11 @@ import { contextBridge, ipcRenderer, webFrame } from "electron/renderer";
 
 import { IpcEvents } from "../shared/IpcEvents";
 import { VesktopNative } from "./VesktopNative";
-import "../excord/preload";
+import { installExcordBridge } from "../excord/preload";
+import { isDiscordOrigin } from "../excord/origin";
 
+if (isDiscordOrigin(location.href)) {
+installExcordBridge();
 contextBridge.exposeInMainWorld("VesktopNative", VesktopNative);
 
 // While sandboxed, Electron "polyfills" these APIs as local variables.
@@ -25,3 +28,4 @@ Function(
 
 webFrame.executeJavaScript(ipcRenderer.sendSync(IpcEvents.GET_VENCORD_RENDERER_SCRIPT));
 webFrame.executeJavaScript(ipcRenderer.sendSync(IpcEvents.GET_VESKTOP_RENDERER_SCRIPT));
+}

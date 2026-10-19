@@ -22,6 +22,10 @@ type Option = ParseArgsOptionDescriptor & {
 };
 
 const options = {
+    "safe-mode": {
+        type: "boolean",
+        description: "Open Discord without plugins or themes, preserving your profile"
+    },
     "start-minimized": {
         default: false,
         type: "boolean",
@@ -83,7 +87,7 @@ const options = {
     repair: {
         type: "boolean",
         short: "r",
-        description: "Re-download Equicord and restart"
+        description: "Verify the bundled plugin runtime and exit"
     }
 } satisfies Record<string, Option>;
 
@@ -156,7 +160,7 @@ export function checkCommandLineForHelpOrVersion() {
             Chromium Options:
               See <https://peter.sh/experiments/chromium-command-line-switches> - only some of them work
 
-            Vesktop Options:
+            Excord Options:
         `;
 
         const optionLines = Object.entries(options)
@@ -324,8 +328,10 @@ function setupSecondInstanceHandler() {
                 }
             });
         } else {
-            import("./mainWindow").then(({ mainWin }) => {
+            import("./mainWindow").then(({ mainWin, loadUrl }) => {
                 if (mainWin) {
+                    const link = commandLine.find(arg => arg.startsWith("discord://"));
+                    if (link) loadUrl(link);
                     if (mainWin.isMinimized()) mainWin.restore();
                     if (!mainWin.isVisible()) mainWin.show();
                     mainWin.focus();

@@ -10,6 +10,9 @@ const native: ExcordNativeApi = {
     createPlugin: (name: string): Promise<string> => ipcRenderer.invoke(ExcordChannels.createPlugin, name),
     refresh: (): Promise<void> => ipcRenderer.invoke(ExcordChannels.refresh),
     diagnostics: (): Promise<PerformanceSnapshot> => ipcRenderer.invoke(ExcordChannels.diagnostics),
-    openSettings: (): Promise<void> => ipcRenderer.invoke(ExcordChannels.openSettings)
+    openSettings: (): Promise<void> => ipcRenderer.invoke(ExcordChannels.openSettings),
+    exportDiagnostics: (): Promise<boolean> => ipcRenderer.invoke(ExcordChannels.exportDiagnostics)
 };
-contextBridge.exposeInMainWorld("ExcordNative", native);
+export function installExcordBridge() {
+    contextBridge.exposeInMainWorld("ExcordNative", native);
+}

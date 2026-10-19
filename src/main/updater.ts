@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import { autoUpdater, UpdateInfo } from "electron-updater";
 import { join } from "path";
 import { IpcEvents, UpdaterIpcEvents } from "shared/IpcEvents";
@@ -36,15 +36,26 @@ autoUpdater.autoInstallOnAppQuit = false;
 autoUpdater.fullChangelog = true;
 
 // Development builds have no update feed. A release configures its own GitHub repository.
-const isOutdated = app.isPackaged ? autoUpdater.checkForUpdates().then(res => Boolean(res?.isUpdateAvailable)).catch(error => {
+const manualAlphaUpdates = app.getVersion().includes("-alpha.");
+const isOutdated = app.isPackaged && !manualAlphaUpdates ? autoUpdater.checkForUpdates().then(res => Boolean(res?.isUpdateAvailable)).catch(error => {
     console.warn("[Excord] Update check failed:", error.message);
     return false;
 }) : Promise.resolve(false);
 
 handle(IpcEvents.UPDATER_IS_OUTDATED, () => isOutdated);
 handle(IpcEvents.UPDATER_OPEN, async () => {
-    const res = await autoUpdater.checkForUpdates();
-    if (res?.isUpdateAvailable && res.updateInfo) openUpdater(res.updateInfo);
+    if (manualAlphaUpdates) {
+        await dialog.showMessageBox({ type: "info", title: "Excord closed alpha", message: "Alpha updates are shared manually.",
+            detail: "Get the next build from the person who shared Excord with you. Install it over this version to keep your profile. The private GitHub feed is not an automatic update service for alpha testers." });
+        return;
+    }
+    try {
+        const res = await autoUpdater.checkForUpdates();
+        if (res?.isUpdateAvailable && res.updateInfo) openUpdater(res.updateInfo);
+    } catch {
+        await dialog.showMessageBox({ type: "info", title: "Excord updates", message: "The update feed could not be reached.",
+            detail: "Check your connection or ask the person who shared this build for a newer installer." });
+    }
 });
 
 function openUpdater(update: UpdateInfo) {
