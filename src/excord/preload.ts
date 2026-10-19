@@ -4,6 +4,7 @@ import { ExcordChannels } from "./channels";
 import type { ExcordNativeApi, LocalPluginSnapshot, PerformanceSnapshot, PluginIssue } from "./types";
 
 const native: ExcordNativeApi = {
+    setRealtimeActivity: active => ipcRenderer.send(ExcordChannels.realtimeActivity, active),
     getLocalPlugins: (): LocalPluginSnapshot => ipcRenderer.sendSync(ExcordChannels.localPlugins),
     reportIssues: (issues: PluginIssue[]) => ipcRenderer.send(ExcordChannels.reportIssues, issues),
     openPluginsFolder: (): Promise<void> => ipcRenderer.invoke(ExcordChannels.openPlugins),

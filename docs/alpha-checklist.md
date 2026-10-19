@@ -1,6 +1,6 @@
 # Excord alpha checklist
 
-Build: 0.1.1-alpha.1
+Build: 0.1.1-alpha.2
 Tester:
 Operating system and version:
 CPU architecture:

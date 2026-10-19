@@ -45,6 +45,7 @@ import { VENCORD_DIR } from "./vencordDir";
 import { attachExcord, prepareLocalPlugins, refreshExcord } from "../excord/service";
 import { isSafeMode } from "../excord/mode";
 import { exportDiagnostics, openProfileFolder, recordRecoveryEvent, restartExcord } from "./recovery";
+import { attachBackgroundPolicy } from "./background";
 
 let isQuitting = false;
 
@@ -396,8 +397,8 @@ function buildBrowserWindowOptions(): BrowserWindowConstructorOptions {
             ...(Settings.store.middleClickAutoscroll && {
                 enableBlinkFeatures: "MiddleClickAutoscroll"
             }),
-            // disable renderer backgrounding to prevent the app from unloading when in the background
-            backgroundThrottling: false
+            // Standard browser scheduling; the media guard requests full speed for active calls/capture.
+            backgroundThrottling: true
         },
         frame: !frameless,
         autoHideMenuBar: !enableMenu && !isSafeMode,
@@ -445,6 +446,7 @@ function createMainWindow() {
     removeVencordSettingsListeners();
 
     const win = (mainWin = new BrowserWindow(buildBrowserWindowOptions()));
+    attachBackgroundPolicy(win);
     attachExcord(win);
 
     win.webContents.setMaxListeners(15);

@@ -9,6 +9,7 @@ import { Settings } from "./settings";
 export const DefaultExcordSettings: Settings = {
     discordBranch: "stable",
     hardwareAcceleration: true,
+    backgroundEfficiency: true,
     hardwareVideoAcceleration: false,
     nativeTitleBar: process.platform !== "win32",
     staticTitle: false,

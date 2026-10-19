@@ -1,0 +1,65 @@
+name: Performance comparison
+
+on:
+  workflow_dispatch:
+    inputs:
+      baseline:
+        description: Excord source revision to compare on the same runner
+        default: "52d3d08"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS Apple silicon
+            runner: macos-26
+            artifact: mac-arm64
+          - name: Windows x64
+            runner: windows-2025
+            artifact: win-x64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: candidate
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.baseline }}
+          path: baseline
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+      - run: bun install --frozen-lockfile
+        working-directory: baseline
+      - run: bun run build
+        working-directory: baseline
+      - run: bun install --frozen-lockfile
+        working-directory: candidate
+      - run: bun run build
+        working-directory: candidate
+      - name: Compare five alternating pairs on one native host
+        working-directory: candidate
+        run: node --import tsx scripts/bench-runtime.mts --baseline ../baseline --app . --rounds 5 --seconds 5 --output test-results/performance.json --corpus test-results/patch-corpus.json
+      - name: Compare the actual patcher against captured module text
+        working-directory: candidate
+        run: node --import tsx scripts/bench-patcher.mts test-results/patch-corpus.json test-results/patcher-performance.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-${{ matrix.artifact }}
+          path: |
+            candidate/test-results/performance.json
+            candidate/test-results/patcher-performance.json
+          if-no-files-found: error

@@ -36,6 +36,7 @@ export interface RuntimeModuleManifest {
 }
 
 export interface ExcordNativeApi {
+    setRealtimeActivity(active: boolean): void;
     getLocalPlugins(): LocalPluginSnapshot;
     reportIssues(issues: PluginIssue[]): void;
     openPluginsFolder(): Promise<void>;

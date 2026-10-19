@@ -9,6 +9,7 @@ import { ExcordChannels } from "./channels";
 import { createLocalPlugin, LocalPluginCompiler } from "./compiler";
 import { isDiscordOrigin } from "./origin";
 import { isSafeMode } from "./mode";
+import { setRealtimeActivity } from "../main/background";
 import type { LocalPluginSnapshot, PerformanceSnapshot, PluginIssue, RuntimeModuleManifest } from "./types";
 
 let manifest: RuntimeModuleManifest | undefined;
@@ -116,6 +117,10 @@ export function getDiagnostics(): PerformanceSnapshot {
 ipcMain.on(ExcordChannels.localPlugins, event => {
     try { assertSender(event.senderFrame); event.returnValue = snapshot; }
     catch { event.returnValue = { plugins: [], issues: [], preparedAt: "", durationMs: 0 }; }
+});
+ipcMain.on(ExcordChannels.realtimeActivity, (event, active: unknown) => {
+    try { assertSender(event.senderFrame); } catch { return; }
+    if (typeof active === "boolean" && currentWindow && event.sender === currentWindow.webContents) setRealtimeActivity(currentWindow, active);
 });
 ipcMain.on(ExcordChannels.reportIssues, (event, issues: unknown) => {
     assertSender(event.senderFrame);

@@ -42,6 +42,11 @@ const SettingsOptions: Record<string, Array<BooleanSetting | SettingsComponent>>
     "System Startup & Performance": [
         AutoStartToggle,
         {
+            key: "backgroundEfficiency",
+            title: "Save power while hidden",
+            description: "Reduce interface activity while Excord is hidden. Calls, camera, and screen capture keep full speed. Changes apply immediately."
+        },
+        {
             key: "hardwareAcceleration",
             title: "Hardware Acceleration",
             description: "Enable hardware acceleration"

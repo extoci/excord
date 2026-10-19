@@ -1,6 +1,6 @@
 # Excord closed alpha
 
-This is a small Mac and Windows test of Excord 0.1.1-alpha.1. It wraps Discord's website and bundles Equicord plus personal TypeScript plugin folders. The Rust/CEF rewrite is on hold.
+This is a small Mac and Windows test of Excord 0.1.1-alpha.2. It wraps Discord's website and bundles Equicord plus personal TypeScript plugin folders. The Rust/CEF rewrite is on hold.
 
 ## Install
 
@@ -10,9 +10,9 @@ Each alpha kit includes the original installer, matching source archive, a check
 
 On Mac, open the DMG, drag the app to Applications, eject the DMG, and launch Excord from Applications. The Mac build is ad-hoc signed to verify bundle integrity, but it has no Developer ID signature or notarization. After verifying the file and its origin, follow Apple's [instructions for opening an app from an unidentified developer](https://support.apple.com/en-us/102445) if macOS blocks the first launch. Do not disable Gatekeeper globally.
 
-On Windows, run `Excord-Setup-0.1.1-alpha.1-x64.exe` and install for your user. An unsigned build may show a Windows reputation prompt. Verify that you received this exact build and compare its SHA-256 with `SHA256SUMS`. A computer's application-control policy can block unsigned applications; this alpha does not bypass that policy. The portable ZIP is also available to the maintainer.
+On Windows, run `Excord-Setup-0.1.1-alpha.2-x64.exe` and install for your user. An unsigned build may show a Windows reputation prompt. Verify that you received this exact build and compare its SHA-256 with `SHA256SUMS`. A computer's application-control policy can block unsigned applications; this alpha does not bypass that policy. The portable ZIP is also available to the maintainer.
 
-To check the kit's files on Mac, run `shasum -a 256 -c SHA256SUMS` in the extracted kit folder. On Windows, run `Get-FileHash .\Excord-Setup-0.1.1-alpha.1-x64.exe -Algorithm SHA256` in PowerShell and compare the result with the matching line in `SHA256SUMS`.
+To check the kit's files on Mac, run `shasum -a 256 -c SHA256SUMS` in the extracted kit folder. On Windows, run `Get-FileHash .\Excord-Setup-0.1.1-alpha.2-x64.exe -Algorithm SHA256` in PowerShell and compare the result with the matching line in `SHA256SUMS`.
 
 ## First session
 
@@ -21,6 +21,8 @@ Open Excord and sign in through Discord's normal login page. Never send anyone a
 Excord settings appear inside Discord Settings → Excord Settings. The bundled plugin catalog is under Plugins. Personal plugins live in the folder opened by Excord Settings → Open plugins folder. Edit TypeScript and press Cmd+R or Ctrl+R to compile changed plugins and reload.
 
 Chromium resources are English-only. Discord's own interface language remains selectable, but some browser menus and messages fall back to English.
+
+Save power while hidden is enabled in Excord Settings under System Startup & Performance. Hidden idle windows can pause interface animation. Connecting or active WebRTC connections, pending capture requests, and live camera/screen tracks request full speed. You can turn this setting off without restarting. If a call ends while the window stays hidden, the current Electron runtime defers restoring power saving until you show the window again. This avoids briefly showing or flashing a hidden window.
 
 ## Calls and screen sharing
 

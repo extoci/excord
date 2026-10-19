@@ -2,6 +2,7 @@ import modules from "~excord-modules";
 
 import type { PluginIssue } from "./types";
 import { createEfficiencyPlugin } from "./efficiency";
+import { installRealtimeGuard } from "./realtime";
 
 interface PluginDefinition {
     name: string;
@@ -11,6 +12,13 @@ interface PluginDefinition {
 }
 
 export function installExcordPlugins() {
+    let mediaGuardAvailable = true;
+    try { installRealtimeGuard(active => ExcordNative.setRealtimeActivity(mediaGuardAvailable ? active : true)); }
+    catch (error) {
+        mediaGuardAvailable = false;
+        ExcordNative.setRealtimeActivity(true);
+        console.warn("[Excord] Media activity guard unavailable; keeping full speed", error);
+    }
     globalThis.ExcordModules = modules;
     const registry = modules["~plugins"] as {
         default: Record<string, PluginDefinition>;

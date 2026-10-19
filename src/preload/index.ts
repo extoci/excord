@@ -11,7 +11,7 @@ import { VesktopNative } from "./VesktopNative";
 import { installExcordBridge } from "../excord/preload";
 import { isDiscordOrigin } from "../excord/origin";
 
-if (isDiscordOrigin(location.href)) {
+if (process.isMainFrame && isDiscordOrigin(location.href)) {
   installExcordBridge();
   contextBridge.exposeInMainWorld("VesktopNative", VesktopNative);
 

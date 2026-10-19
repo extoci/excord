@@ -1,4 +1,5 @@
 export const ExcordChannels = {
+    realtimeActivity: "excord:realtime-activity",
     localPlugins: "excord:local-plugins",
     reportIssues: "excord:report-issues",
     openPlugins: "excord:open-plugins",

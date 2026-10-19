@@ -4,7 +4,7 @@ Excord wraps Discord's website in an opinionated desktop app. The first version 
 
 This is an early implementation. It retains Equicord's plugin manager and Webpack patcher for compatibility, and derives its desktop integration from Equibop and Vesktop. It is not a completed rewrite of those projects. See `upstream.lock.json` for the exact source revisions.
 
-The 0.1.1-alpha.1 candidate adds safe-mode recovery, private diagnostics export, settings backups, and installer verification for a small closed alpha. Read the [verification results](docs/v0.1.1-alpha.1.md), [alpha guide](docs/closed-alpha.md), and [device checklist](docs/alpha-checklist.md) before inviting testers. Builds remain in private drafts in [GitHub Releases](https://github.com/extoci/excord/releases).
+The 0.1.1-alpha.2 candidate adds activity-aware background scheduling and a patch-matching optimization, alongside recovery controls and installer verification. Read the [alpha guide](docs/closed-alpha.md) and [device checklist](docs/alpha-checklist.md) before inviting testers. Builds remain in private drafts in [GitHub Releases](https://github.com/extoci/excord/releases).
 
 See the [measured app sizes](docs/app-size.md) for the current package-size reductions. Release builds include English Chromium resources only. Discord's interface language remains selectable; some browser menus and messages fall back to English.
 

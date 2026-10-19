@@ -20,6 +20,10 @@ The Excord settings component has a standalone development preview at `bun run s
 
 `scripts/build/runtime.mts` builds the upstream runtime and its shared module registries. Preserve Equicord's original import evaluation order. Register local renderer plugins immediately before upstream `initPluginManager`, not before the initial `~plugins` import graph finishes.
 
+`scripts/build/optimizePatcher.mts` applies a checked transformation to the pinned patcher, backed by semantic comparisons against the original. `src/excord/patchPrefilter.ts` can only reject definite misses; positive candidates retain upstream replacement semantics. Keep the vendor tree unchanged and review this transform when updating the pin.
+
+`src/main/background.ts` and `src/excord/realtime.ts` protect live WebRTC/capture while allowing idle background scheduling. Preserve the native test in `scripts/power-smoke.mts`, including hidden WebRTC echo, visibility transitions, instant settings, and subframe isolation. Electron 43.8 re-enabling while already hidden is deferred until show. Benchmark methodology and limits are in `docs/performance.md`; the performance workflow compares both revisions on each same native host. Clear Playwright's own visibility override before measuring.
+
 `src/excord/compiler.ts` owns folder discovery, content fingerprints, per-plugin builds, shared API resolution, CSS and file imports, and cache cleanup. The compiler loads lazily. In packaged apps its executable must run from `app.asar.unpacked`.
 
 `src/excord/service.ts` owns the privileged desktop API, native helper registration and replacement, serialized refreshes, and on-demand process metrics. `src/excord/runtime.ts` registers renderer definitions before the upstream plugin manager initializes.

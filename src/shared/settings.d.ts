@@ -25,6 +25,7 @@ export interface Settings {
     enableRoundedCorners: boolean;
     disableSmoothScroll: boolean;
     hardwareAcceleration: boolean;
+    backgroundEfficiency: boolean;
     hardwareVideoAcceleration: boolean;
     arRPC: boolean;
     arRPCDisabled: boolean;
