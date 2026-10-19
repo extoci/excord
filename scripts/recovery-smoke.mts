@@ -157,6 +157,7 @@ try {
   });
   await close(safe, "safe");
   results.safeMode = true;
+  console.log("[recovery] Safe mode bypassed renderer and native plugins");
   const normal = await launch(false);
   const page = await normal.firstWindow();
   await page.waitForFunction(
@@ -181,6 +182,9 @@ try {
     "test-only",
   );
   results.profilePreserved = true;
+  console.log(
+    "[recovery] Normal launch restored plugins and preserved the session",
+  );
   await page.route("https://discord.com/**", (route) =>
     route.abort("internetdisconnected"),
   );
@@ -190,9 +194,15 @@ try {
     )!;
     item.click(item, BrowserWindow.getAllWindows()[0], {} as KeyboardEvent);
   });
-  await page.waitForURL("excord://static/views/offline.html", {
-    timeout: 30000,
-  });
+  // The intentional network failure rejects a navigation waiter before recovery commits.
+  const offlineDeadline = Date.now() + 30000;
+  while (
+    page.url() !== "excord://static/views/offline.html" &&
+    Date.now() < offlineDeadline
+  )
+    await delay(100);
+  assert.equal(page.url(), "excord://static/views/offline.html");
+  await page.getByRole("heading", { name: "Discord couldn't load" }).waitFor();
   assert.equal(
     await page.evaluate(
       () => typeof (globalThis as Record<string, unknown>).ExcordNative,
@@ -213,6 +223,9 @@ try {
     { timeout: 30000 },
   );
   results.offlineRecovery = true;
+  console.log(
+    "[recovery] Offline page retried successfully without exposing native APIs",
+  );
   const reportPath = join(profile, "diagnostics.json");
   await normal.evaluate(({ dialog, Menu, BrowserWindow }, path) => {
     dialog.showSaveDialog = async () => ({ canceled: false, filePath: path });
@@ -231,6 +244,7 @@ try {
       !report.includes("test-only"),
   );
   results.diagnosticsPrivate = true;
+  console.log("[recovery] Diagnostics export excluded private fields");
   await close(normal, "normal");
   await mkdir("test-results", { recursive: true });
   await writeFile(
