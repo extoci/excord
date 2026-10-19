@@ -1,6 +1,6 @@
 # Excord alpha checklist
 
-Build: 0.1.1-alpha.2
+Build: 0.1.1-alpha.3
 Tester:
 Operating system and version:
 CPU architecture:
@@ -16,6 +16,13 @@ Mark each item pass, fail, or not tested. Record failures in alpha-feedback.md. 
 - [ ] Send a message, upload a file, paste an image, and open an external link.
 - [ ] Fully quit, relaunch, and confirm your login and settings remain.
 - [ ] Open Excord Settings and confirm the bundled plugin catalog is accessible.
+
+## Developer Portal
+
+- [ ] Enable Developer Mode under Advanced and confirm Developer Portal appears at the bottom of Settings. Disable it and confirm the entry disappears.
+- [ ] Open Developer Portal and verify sign-in, resize, zoom, and the Back to Excord button on this device.
+- [ ] Return to Excord and confirm the same chat session remains. Reload the portal with Cmd/Ctrl+R.
+- [ ] On an unsaved portal form, try returning. Confirm Keep editing stays in the portal and Leave portal returns to Excord.
 
 ## Voice and video
 

@@ -9,6 +9,8 @@ interface PluginDefinition {
     description: string;
     authors: unknown[];
     enabledByDefault?: boolean;
+    required?: boolean;
+    dependencies?: string[];
 }
 
 export function installExcordPlugins() {
@@ -26,6 +28,11 @@ export function installExcordPlugins() {
     };
     // Set catalog defaults before initPluginManager reads settings; saved choices still win.
     registry.default.Experiments.enabledByDefault = true;
+    registry.default.ExcordDeveloperPortal = {
+        name: "ExcordDeveloperPortal", description: "Developer Portal integration for Excord settings.",
+        authors: [{ name: "Excord", id: 0n }], required: true, dependencies: ["UserSettingsAPI"]
+    };
+    registry.PluginMeta.ExcordDeveloperPortal = { folderName: "excord/developerPortal", userPlugin: false };
     registry.default.ExcordEfficiency = createEfficiencyPlugin(modules);
     registry.PluginMeta.ExcordEfficiency = { folderName: "excord/efficiency", userPlugin: false };
     const issues: PluginIssue[] = [];

@@ -48,6 +48,9 @@ jobs:
       - run: bun run check
       - run: bun run typecheck:reference
       - run: bun run build
+      - name: Verify Developer Portal isolation and lifecycle
+        timeout-minutes: 2
+        run: node --import tsx scripts/portal-smoke.mts
       - name: Exercise the RPC worker
         run: bun run test:rpc
       - name: Build installer and archive

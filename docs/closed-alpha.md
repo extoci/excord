@@ -1,6 +1,6 @@
 # Excord closed alpha
 
-This is a small Mac and Windows test of Excord 0.1.1-alpha.2. It wraps Discord's website and bundles Equicord plus personal TypeScript plugin folders. The Rust/CEF rewrite is on hold.
+This is a small Mac and Windows test of Excord 0.1.1-alpha.3. It wraps Discord's website and bundles Equicord plus personal TypeScript plugin folders. The Rust/CEF rewrite is on hold.
 
 ## Install
 
@@ -10,9 +10,9 @@ Each alpha kit includes the original installer, matching source archive, a check
 
 On Mac, open the DMG, drag the app to Applications, eject the DMG, and launch Excord from Applications. The Mac build is ad-hoc signed to verify bundle integrity, but it has no Developer ID signature or notarization. After verifying the file and its origin, follow Apple's [instructions for opening an app from an unidentified developer](https://support.apple.com/en-us/102445) if macOS blocks the first launch. Do not disable Gatekeeper globally.
 
-On Windows, run `Excord-Setup-0.1.1-alpha.2-x64.exe` and install for your user. An unsigned build may show a Windows reputation prompt. Verify that you received this exact build and compare its SHA-256 with `SHA256SUMS`. A computer's application-control policy can block unsigned applications; this alpha does not bypass that policy. The portable ZIP is also available to the maintainer.
+On Windows, run `Excord-Setup-0.1.1-alpha.3-x64.exe` and install for your user. An unsigned build may show a Windows reputation prompt. Verify that you received this exact build and compare its SHA-256 with `SHA256SUMS`. A computer's application-control policy can block unsigned applications; this alpha does not bypass that policy. The portable ZIP is also available to the maintainer.
 
-To check the kit's files on Mac, run `shasum -a 256 -c SHA256SUMS` in the extracted kit folder. On Windows, run `Get-FileHash .\Excord-Setup-0.1.1-alpha.2-x64.exe -Algorithm SHA256` in PowerShell and compare the result with the matching line in `SHA256SUMS`.
+To check the kit's files on Mac, run `shasum -a 256 -c SHA256SUMS` in the extracted kit folder. On Windows, run `Get-FileHash .\Excord-Setup-0.1.1-alpha.3-x64.exe -Algorithm SHA256` in PowerShell and compare the result with the matching line in `SHA256SUMS`.
 
 ## First session
 
@@ -20,7 +20,7 @@ Open Excord and sign in through Discord's normal login page. Never send anyone a
 
 Excord settings appear inside Discord Settings → Excord Settings. The bundled plugin catalog is under Plugins. Personal plugins live in the folder opened by Excord Settings → Open plugins folder. Edit TypeScript and press Cmd+R or Ctrl+R to compile changed plugins and reload.
 
-Starting with the next release after alpha.2, the bundled Experiments plugin will be enabled by default for new profiles. Saved plugin choices take precedence on upgrades. Enable it under Settings → Plugins → Experiments and refresh if your existing profile has it disabled. Enabling the plugin exposes Discord's experiments controls; it does not turn every experiment on.
+The bundled Experiments plugin is enabled by default for new profiles. Saved plugin choices take precedence on upgrades. Enable it under Settings → Plugins → Experiments and refresh if your existing profile has it disabled. Enabling the plugin exposes Discord's experiments controls; it does not turn every experiment on.
 
 Chromium resources are English-only. Discord's own interface language remains selectable, but some browser menus and messages fall back to English.
 
@@ -57,3 +57,7 @@ Send the report and the accompanying feedback form to the person who shared Exco
 The native workflow checks strict TypeScript, plugin compilation and caching, native helpers, RPC, packaged resources, startup, normal shutdown after refreshes, and CSS updates across two windows. The expanded alpha checks install the DMG/NSIS on disposable runners, relaunch, reinstall the same build, and check that a synthetic persistent cookie survives. Recovery checks exercise safe mode with a native plugin present, malformed settings, offline recovery, and the diagnostics privacy boundary.
 
 The Mac CI runner uses macOS 26 while the app declares macOS 27 as its minimum. Gatekeeper, SmartScreen, actual account login, calls, camera output, captured screen/audio, notifications, tray behavior, and sleep/wake must be checked on real computers. A successful catalog build does not establish that every plugin works. The maintainer should complete the checklist on both computers before inviting friends.
+
+## Developer Portal
+
+Enable Discord's Developer Mode under Settings → Advanced. Developer → Developer Portal then appears at the bottom of Settings. It opens Discord's real Developer Portal inside Excord. Use Back to Excord to return to the existing chat session, or Cmd/Ctrl+R to reload the portal. The portal uses the same browser session but receives no Excord bridge or modification preload. Test sign-in and unsaved form prompts before relying on it for application changes.

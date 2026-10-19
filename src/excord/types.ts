@@ -36,6 +36,10 @@ export interface RuntimeModuleManifest {
 }
 
 export interface ExcordNativeApi {
+    openDeveloperPortal(): Promise<void>;
+    closeDeveloperPortal(): Promise<void>;
+    reloadDeveloperPortal(): Promise<void>;
+    onDeveloperPortalState(listener: (state: import("./developerPortal").DeveloperPortalState) => void): () => void;
     setRealtimeActivity(active: boolean): void;
     getLocalPlugins(): LocalPluginSnapshot;
     reportIssues(issues: PluginIssue[]): void;

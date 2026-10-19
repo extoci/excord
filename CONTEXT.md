@@ -36,6 +36,8 @@ The bundled runtime owns QuickCSS and theme watchers. Do not add a second set in
 
 Closed alpha builds use manual updates. Mac screen sharing uses Electron's native system picker and declares `NSAudioCaptureUsageDescription`; live-device audio remains a manual check. Native CI also tests DMG/NSIS installation, relaunch and same-build reinstallation with synthetic cookie persistence, safe mode, offline recovery, and diagnostics privacy. `scripts/install-smoke.mts` must run only on disposable CI runners because it changes OS installation registrations. `scripts/prepare-alpha.mts` packages per-platform kits from a verified source SHA and requires passing installer/recovery/plugin and hidden-window/WebRTC reports.
 
+`src/main/developerPortal.ts` owns the lazy Developer Portal WebContentsView and its navigation/lifecycle. Keep the portal free of modification preloads. `src/renderer/developerPortal.tsx` appends its settings section at the root bottom when Discord Developer Mode is on, and mounts the trusted return banner in the existing renderer. `scripts/portal-smoke.mts` tests the native module with fully mocked HTTPS and no account; visual mocks are not retained. See `docs/developer-portal.md`.
+
 `src/excord/ControlCenter.tsx` presents local plugins, metrics, and compatibility information inside Discord settings. Desktop settings below it retain the inherited hardware, tray, notification, theme, and window controls.
 
 ## Release boundaries

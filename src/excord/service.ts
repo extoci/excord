@@ -155,3 +155,13 @@ ipcMain.handle(ExcordChannels.openSettings, async event => {
     assertSender(event.senderFrame);
     await currentWindow?.webContents.executeJavaScript('Vencord.Webpack.Common.SettingsRouter.openUserSettings("ExcordSettings")');
 });
+
+for (const [channel, action] of [
+    [ExcordChannels.openPortal, "open"], [ExcordChannels.closePortal, "back"], [ExcordChannels.reloadPortal, "reload"]
+] as const) ipcMain.handle(channel, async event => {
+    assertSender(event.senderFrame);
+    if (isSafeMode || !currentWindow || currentWindow.isDestroyed() || event.sender !== currentWindow.webContents)
+        throw new Error("Developer Portal requires the main Excord window.");
+    const { developerPortal } = await import("../main/developerPortal");
+    developerPortal(currentWindow)[action]();
+});

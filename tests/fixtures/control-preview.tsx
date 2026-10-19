@@ -10,6 +10,9 @@ const diagnostics: PerformanceSnapshot = {
     localPlugins: { plugins: [], issues: [], preparedAt: "2026-10-18T21:30:00Z", durationMs: 12 }
 };
 const native: ExcordNativeApi = {
+    setRealtimeActivity: () => {},
+    openDeveloperPortal: async () => {}, closeDeveloperPortal: async () => {}, reloadDeveloperPortal: async () => {},
+    onDeveloperPortalState: () => () => {},
     getLocalPlugins: () => diagnostics.localPlugins,
     reportIssues: () => {},
     openPluginsFolder: async () => {},

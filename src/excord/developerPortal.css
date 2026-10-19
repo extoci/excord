@@ -1,0 +1,10 @@
+.excord-portal-banner{position:fixed;inset:0 0 auto;height:40px;box-sizing:border-box;z-index:2147483647;display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:0 12px;background:var(--background-base-lowest,var(--background-tertiary,#1e1f22));-webkit-app-region:drag}
+.excord-portal-mac{padding-left:88px}
+.excord-portal-banner button{-webkit-app-region:no-drag;cursor:pointer}
+.excord-portal-window-controls{display:flex;align-self:stretch;margin-right:-12px}
+.excord-portal-window-controls button{border:0;background:transparent;color:var(--text-default,#f2f3f5);width:42px;font:19px system-ui}
+.excord-portal-window-controls button:hover{background:var(--background-modifier-hover,#35373c)}
+.excord-portal-window-controls button:last-child:hover{background:#bd2d38;color:white}
+.excord-portal-launch{padding:24px;color:var(--text-default,#ddd)}
+.excord-portal-launch h2{font-size:24px;margin:0 0 12px}
+.excord-portal-launch p{margin-bottom:20px}

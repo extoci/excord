@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import "./developerPortal";
 import "./themedSplash";
 import "./ipcCommands";
 import "./appBadge";

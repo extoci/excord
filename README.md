@@ -4,7 +4,7 @@ Excord wraps Discord's website in an opinionated desktop app. The first version 
 
 This is an early implementation. It retains Equicord's plugin manager and Webpack patcher for compatibility, and derives its desktop integration from Equibop and Vesktop. It is not a completed rewrite of those projects. See `upstream.lock.json` for the exact source revisions.
 
-The 0.1.1-alpha.2 candidate adds activity-aware background scheduling and a patch-matching optimization, alongside recovery controls and installer verification. Read the [alpha guide](docs/closed-alpha.md) and [device checklist](docs/alpha-checklist.md) before inviting testers. Builds remain in private drafts in [GitHub Releases](https://github.com/extoci/excord/releases).
+The 0.1.1-alpha.3 candidate adds an embedded Developer Portal and enables Experiments for new profiles. It includes activity-aware background scheduling, a patch-matching optimization, recovery controls, and installer verification. Read the [alpha guide](docs/closed-alpha.md) and [device checklist](docs/alpha-checklist.md) before inviting testers. Builds remain in private drafts in [GitHub Releases](https://github.com/extoci/excord/releases).
 
 Native CI comparisons against the previous Excord build measured 97.3% less CPU on Windows and 98.7% less on Mac for a hidden animation workload. The patch-miss replay took 56% less time on Windows and 59% less on Mac, with the catalog enabled. These are specific workload results. Overall startup and RAM advantages are unproven. Read the [methods and raw measurements](docs/performance.md).
 
