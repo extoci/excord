@@ -88,5 +88,5 @@ export function registerScreenShareHandler() {
         }
 
         callback(streams);
-    });
+    }, { useSystemPicker: process.platform === "darwin" });
 }

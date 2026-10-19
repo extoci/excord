@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { access, lstat, mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { dirname, join, relative, resolve } from "node:path";
@@ -27,6 +28,10 @@ await access(binary);
 // Logical regular-file bytes, excluding symlinks and filesystem allocation overhead.
 // Keep the runtime and unpacked compiler in this total so ASAR savings cannot hide growth elsewhere.
 const appDirectory = resolve(dirname(archive), process.platform === "darwin" ? "../.." : "..");
+if (process.platform === "darwin") {
+    const description = execFileSync("/usr/libexec/PlistBuddy", ["-c", "Print :NSAudioCaptureUsageDescription", join(appDirectory, "Contents/Info.plist")], { encoding: "utf8" });
+    assert.match(description, /Excord/, "The Mac package must declare system audio capture access");
+}
 async function inventory(directory: string): Promise<{ path: string; bytes: number }[]> {
     const files: { path: string; bytes: number }[] = [];
     for (const name of await readdir(directory)) {

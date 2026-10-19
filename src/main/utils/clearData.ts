@@ -14,7 +14,7 @@ export async function clearData(win: BrowserWindow) {
         detail: "This logs you out and resets settings and QuickCSS. Existing settings are backed up in your profile's backups folder. Personal plugin and theme folders are kept.\n\nExcord will restart. Use safe mode instead if you want to keep your login.",
         buttons: ["Yes", "No"],
         cancelId: MessageBoxChoice.Cancel,
-        defaultId: MessageBoxChoice.Default,
+        defaultId: MessageBoxChoice.Cancel,
         type: "warning"
     });
 

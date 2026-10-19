@@ -26,6 +26,10 @@ The Excord settings component has a standalone development preview at `bun run s
 
 The bundled runtime owns QuickCSS and theme watchers. Do not add a second set in the desktop wrapper. The Electron smoke test checks that one QuickCSS edit emits one update after repeated refreshes. Build scripts collect dependency license texts from the actual bundle input graph, and package checks require them in the release.
 
+`--safe-mode` bypasses modification preloads, bundled runtime, personal plugins, themes, and RPC while preserving the same session profile. It uses software rendering and stable window defaults. `src/main/recovery.ts` owns native recovery actions and export; `src/excord/diagnosticReport.ts` explicitly selects report fields. Never export raw errors, plugin source, profile paths, cookies, or account data. Reset backs up known settings and QuickCSS files and preserves personal plugin/theme folders.
+
+Closed alpha builds use manual updates. Mac screen sharing uses Electron's native system picker and declares `NSAudioCaptureUsageDescription`; live-device audio remains a manual check. Native CI also tests DMG/NSIS installation, relaunch and same-build reinstallation with synthetic cookie persistence, safe mode, offline recovery, and diagnostics privacy. `scripts/install-smoke.mts` must run only on disposable CI runners because it changes OS installation registrations. `scripts/prepare-alpha.mts` packages per-platform kits from a verified source SHA and requires passing installer/recovery/plugin reports.
+
 `src/excord/ControlCenter.tsx` presents local plugins, metrics, and compatibility information inside Discord settings. Desktop settings below it retain the inherited hardware, tray, notification, theme, and window controls.
 
 ## Release boundaries

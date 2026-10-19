@@ -16,7 +16,8 @@ const native: ExcordNativeApi = {
     createPlugin: async name => { diagnostics.localPlugins.plugins.push({ folder: name, code: "", cacheHit: false, durationMs: 10 }); return `/preview/plugins/${name}`; },
     refresh: async () => { window.location.reload(); },
     diagnostics: async () => diagnostics,
-    openSettings: async () => {}
+    openSettings: async () => {},
+    exportDiagnostics: async () => false
 };
 globalThis.ExcordNative = native;
 globalThis.VesktopNative = { app: { getVersion: () => "0.1.0" } } as typeof VesktopNative;

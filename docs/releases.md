@@ -35,3 +35,11 @@ Version tags and package.json must match. Do not move an existing release tag to
 The initial builds are unsigned and unnotarized. They are development builds for manual testing. Public distribution needs the project's own Apple and Windows signing configuration. No upstream signing identity or certificate belongs in Excord's build.
 
 The smoke tests verify startup and plugin loading without an account. They do not verify signing, account login, voice calls, camera permissions, screen sharing with audio, tray behavior, or notifications on physical machines. Complete those checks on the user's Mac and Windows computer before calling a release ready for daily use.
+
+## Closed alpha
+
+`0.1.1-alpha.1` uses manual updates. It does not check the private feed on startup, and its update action explains how to obtain the next shared installer. No repository token belongs in a tester's app.
+
+The workflow also runs installer checks on disposable native hosts. It installs, launches, relaunches, reinstalls the same artifact, and verifies synthetic-cookie persistence and normal shutdown. This is a reinstallation check, not proof of migration between every historical version. `scripts/install-smoke.mts` requires CI because installation writes OS registrations. Recovery integration checks use a profile path with spaces, malformed settings, a native plugin, safe mode, an offline request failure, and a diagnostics export.
+
+For each verified alpha source revision, prepare a Mac and Windows alpha kit. Include its unchanged installer, `closed-alpha.md`, `alpha-checklist.md`, `alpha-feedback.md`, matching source archive, and `SHA256SUMS`. The maintainer can download these from the private draft and forward the kits without granting repository access. The repository remains private. Do not invite testers, send messages, or change repository visibility as part of packaging.

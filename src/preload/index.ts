@@ -12,20 +12,24 @@ import { installExcordBridge } from "../excord/preload";
 import { isDiscordOrigin } from "../excord/origin";
 
 if (isDiscordOrigin(location.href)) {
-installExcordBridge();
-contextBridge.exposeInMainWorld("VesktopNative", VesktopNative);
+  installExcordBridge();
+  contextBridge.exposeInMainWorld("VesktopNative", VesktopNative);
 
-// While sandboxed, Electron "polyfills" these APIs as local variables.
-// We have to pass them as arguments as they are not global
-Function(
+  // While sandboxed, Electron "polyfills" these APIs as local variables.
+  // We have to pass them as arguments as they are not global
+  Function(
     "require",
     "Buffer",
     "process",
     "clearImmediate",
     "setImmediate",
-    ipcRenderer.sendSync(IpcEvents.GET_VENCORD_PRELOAD_SCRIPT)
-)(require, Buffer, process, clearImmediate, setImmediate);
+    ipcRenderer.sendSync(IpcEvents.GET_VENCORD_PRELOAD_SCRIPT),
+  )(require, Buffer, process, clearImmediate, setImmediate);
 
-webFrame.executeJavaScript(ipcRenderer.sendSync(IpcEvents.GET_VENCORD_RENDERER_SCRIPT));
-webFrame.executeJavaScript(ipcRenderer.sendSync(IpcEvents.GET_VESKTOP_RENDERER_SCRIPT));
+  webFrame.executeJavaScript(
+    ipcRenderer.sendSync(IpcEvents.GET_VENCORD_RENDERER_SCRIPT),
+  );
+  webFrame.executeJavaScript(
+    ipcRenderer.sendSync(IpcEvents.GET_VESKTOP_RENDERER_SCRIPT),
+  );
 }

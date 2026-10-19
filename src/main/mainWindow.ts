@@ -44,7 +44,7 @@ import { downloadVencordAsar, ensureVencordFiles } from "./utils/vencordLoader";
 import { VENCORD_DIR } from "./vencordDir";
 import { attachExcord, prepareLocalPlugins, refreshExcord } from "../excord/service";
 import { isSafeMode } from "../excord/mode";
-import { exportDiagnostics, recordRecoveryEvent, restartExcord } from "./recovery";
+import { exportDiagnostics, openProfileFolder, recordRecoveryEvent, restartExcord } from "./recovery";
 
 let isQuitting = false;
 
@@ -103,6 +103,7 @@ function initMenuBar(win: BrowserWindow) {
             label: "Export diagnostics…",
             click: () => { void exportDiagnostics(win).catch(error => console.error("[Excord] Diagnostic export failed", error)); }
         },
+        { label: "Open profile folder", click: () => { void openProfileFolder(); } },
         {
             label: "Reset Excord",
             async click() {
