@@ -4,6 +4,8 @@ Excord wraps Discord's website in an opinionated desktop app. The first version 
 
 This is an early implementation. It retains Equicord's plugin manager and Webpack patcher for compatibility, and derives its desktop integration from Equibop and Vesktop. It is not a completed rewrite of those projects. See `upstream.lock.json` for the exact source revisions.
 
+The v0.1.0 development builds are attached to a private draft in [GitHub Releases](https://github.com/extoci/excord/releases). Read the [build notes](docs/v0.1.0.md) for verification results and the remaining manual checks.
+
 ## Develop
 
 Install Bun 1.4 or later and Node 22 or later, then run:
