@@ -18,7 +18,7 @@ for (const [channel, action] of [[ExcordChannels.openPortal, "open"], [ExcordCha
 ipcMain.handle("portal-test", async (event, command, value) => {
     if (event.sender !== win.webContents) throw Error("Not the test host");
     const view = win.contentView.children.find((view: any) => view.webContents && view.webContents !== win.webContents) as any;
-    if (command === "snapshot") return view ? { id: view.webContents.id, bounds: view.getBounds(), url: view.webContents.getURL(), loading: view.webContents.isLoading(), sameSession: view.webContents.session === win.webContents.session } : null;
+    if (command === "snapshot") return view ? { id: view.webContents.id, bounds: view.getBounds(), hostSize: win.getContentSize(), url: view.webContents.getURL(), loading: view.webContents.isLoading(), sameSession: view.webContents.session === win.webContents.session } : null;
     if (command === "mainId") return win.webContents.id;
     if (command === "destroyed") return !webContents.fromId(value);
     if (command === "isolation") return view.webContents.executeJavaScript('({bridge:typeof ExcordNative,mod:typeof Vencord,desktop:typeof VesktopNative,node:typeof require,opener:window.opener===null})');

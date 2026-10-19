@@ -39,7 +39,7 @@ async function wait(check: () => Promise<boolean>) {
 }
 let page: Awaited<ReturnType<typeof application.firstWindow>>;
 const call = (command: string, value?: unknown) => page.evaluate(([command, value]) => (globalThis as any).PortalTest.call(command, value), [command, value]);
-const view = () => call("snapshot") as Promise<{ id: number; bounds: { x: number; y: number; width: number; height: number; }; url: string; loading: boolean; sameSession: boolean; } | null>;
+const view = () => call("snapshot") as Promise<{ id: number; bounds: { x: number; y: number; width: number; height: number; }; hostSize: [number, number]; url: string; loading: boolean; sameSession: boolean; } | null>;
 try {
     page = await application.firstWindow();
     await page.getByRole("button", { name: "Developer Portal", exact: true }).waitFor();
@@ -56,8 +56,15 @@ try {
     await page.evaluate(() => ExcordNative.openDeveloperPortal());
     assert.equal((await view())!.id, first.id, "Opening twice must reuse the view");
     await call("resize");
-    await wait(async () => (await view())!.bounds.width === 1000);
-    assert.equal((await view())!.bounds.height, 700 - PORTAL_BANNER_HEIGHT);
+    // Window managers may cap the requested size to the runner's available screen.
+    await wait(async () => {
+        const current = (await view())!;
+        return current.bounds.width === current.hostSize[0]
+            && current.bounds.height === Math.max(0, current.hostSize[1] - PORTAL_BANNER_HEIGHT)
+            && current.bounds.width !== first.bounds.width;
+    });
+    const resized = (await view())!;
+    assert.equal(resized.bounds.height, Math.max(0, resized.hostSize[1] - PORTAL_BANNER_HEIGHT));
     await call("zoom");
     assert.equal((await view())!.bounds.y, Math.round(PORTAL_BANNER_HEIGHT * 1.25), "Native bounds must account for the banner's zoom");
     await call("unsaved");
