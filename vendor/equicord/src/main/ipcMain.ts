@@ -130,6 +130,7 @@ ipcMain.handle(IpcEvents.INIT_FILE_WATCHERS, ({ sender }) => {
     }
     disposeFileWatchers?.();
     const watchers: FSWatcher[] = [];
+    let lastQuickCss: string | undefined;
     let stopped = false;
     const dispose = () => {
         stopped = true;
@@ -144,7 +145,11 @@ ipcMain.handle(IpcEvents.INIT_FILE_WATCHERS, ({ sender }) => {
         if (stopped) return;
         watchers.push(watch(QUICK_CSS_PATH, { persistent: false }, debounce(async () => {
             const css = await readCss();
-            if (!stopped) broadcastCss(IpcEvents.QUICK_CSS_UPDATE, css);
+            // A single write can generate several OS notifications beyond the debounce window.
+            if (!stopped && css !== lastQuickCss) {
+                lastQuickCss = css;
+                broadcastCss(IpcEvents.QUICK_CSS_UPDATE, css);
+            }
         }, 50)));
     }).catch(() => { });
 
