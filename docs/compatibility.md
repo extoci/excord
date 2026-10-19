@@ -8,6 +8,8 @@ Excord gives the bundled runtime sole ownership of QuickCSS and theme watchers. 
 
 Excord replaces Equibop's standalone Bun RPC executable with the Node arRPC server used by Vesktop, running in an Electron worker. The Linux helper changed from 98,899,144 bytes to roughly 60,000 bytes of JavaScript. This removes a second language runtime from the distribution. RPC and process scanning remain off until enabled. Excord retains an external loopback RPC connection option.
 
+Excord excludes Equicord's NewPluginsManager from the runtime registry. New-plugin and new-setting announcement popups never register, including when an existing profile saved the plugin as enabled. The manual plugin catalog remains available in Settings.
+
 ## Local plugin loading
 
 Each folder in the user's plugins directory has an `index.ts` or `index.tsx` entry. A plugin exports the same `definePlugin` definition that Equicord accepts. Excord registers it before Equicord initializes its plugin manager. This preserves dependency activation, settings defaults, patch canonicalization, and lifecycle stages.

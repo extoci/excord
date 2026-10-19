@@ -55,5 +55,8 @@ export function installExcordPlugins() {
             console.error(`[Excord] Could not load ${plugin.folder}`, error);
         }
     }
+    // Excord never registers plugin announcement handlers, even for saved enabled profiles.
+    delete registry.default.NewPluginsManager;
+    delete registry.PluginMeta.NewPluginsManager;
     if (issues.length) ExcordNative.reportIssues(issues);
 }

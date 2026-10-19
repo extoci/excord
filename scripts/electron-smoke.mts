@@ -70,6 +70,8 @@ try {
         hasPatch: Vencord.WebpackPatcher.patches.some((patch: { plugin: string }) => patch.plugin === "ExcordRefreshProbe")
     }));
     assert.equal(initial.native, "object");
+    assert.equal(await page.evaluate(() => Object.hasOwn(Vencord.Plugins.plugins, "NewPluginsManager")), false,
+        "Excord must never register plugin announcements");
     assert.equal(initial.experimentsEnabled, true, "Fresh profiles must enable Experiments");
     assert.equal(initial.experimentsDefault, true);
     assert.ok(initial.plugins > 300, `Expected the bundled catalog, received ${initial.plugins} plugins`);
@@ -81,6 +83,7 @@ try {
     assert.equal(await page.evaluate(() => VesktopNative.settings.get().arRPCDisabled), true);
 
     await page.evaluate(async () => {
+        Vencord.Settings.plugins.NewPluginsManager = { enabled: true };
         Vencord.Settings.plugins.Experiments.enabled = false;
         await VencordNative.settings.set(JSON.parse(JSON.stringify(Vencord.Settings)), "plugins.Experiments.enabled");
     });
@@ -93,6 +96,8 @@ try {
     await page.waitForFunction(() => (globalThis as Record<string, unknown>).__excordProbe === "second", undefined, { timeout: 30000 });
     await page.waitForFunction(() => (globalThis as Record<string, unknown>).__excordNativeProbe === "native:second", undefined, { timeout: 30000 });
     assert.equal(await page.evaluate(() => Vencord.Plugins.isPluginEnabled("Experiments")), false, "Refreshing must preserve a saved disabled choice");
+    assert.equal(await page.evaluate(() => Object.hasOwn(Vencord.Plugins.plugins, "NewPluginsManager")), false,
+        "Saved enabled settings must not restore plugin announcements on refresh");
     console.log("[smoke] Menu refresh loaded changed source and preserved the Experiments choice");
 
     await Promise.all([page.waitForEvent("domcontentloaded"), page.evaluate(() => { void ExcordNative.refresh(); })]);
