@@ -4,6 +4,8 @@ Excord v0 keeps Equicord's plugin manager, Webpack interception and patching, se
 
 The desktop integration derives from Equibop and Vesktop. Excord retains its screen-share picker, voice integrations, notifications, tray, themes, RPC integration, popouts, and window controls. Those integrations need separate verification on each target operating system.
 
+Excord gives the bundled runtime sole ownership of QuickCSS and theme watchers. It removes the duplicate desktop watchers and fixes an upstream asynchronous registration race that retained QuickCSS watchers across refreshes. The Electron regression test reproduced six notifications for one edit before the fix and checks for one notification afterward. Watchers also close on refresh, window destruction, and application quit.
+
 Excord replaces Equibop's standalone Bun RPC executable with the Node arRPC server used by Vesktop, running in an Electron worker. The Linux helper changed from 98,899,144 bytes to roughly 60,000 bytes of JavaScript. This removes a second language runtime from the distribution. RPC and process scanning remain off until enabled. Excord retains an external loopback RPC connection option.
 
 ## Local plugin loading

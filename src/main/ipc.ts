@@ -7,8 +7,8 @@
 if (process.platform === "linux") import("./venmic");
 
 import { execFile } from "node:child_process";
-import { type FSWatcher, mkdirSync, readFileSync, watch } from "node:fs";
-import { open, readFile, stat } from "node:fs/promises";
+import { readFileSync, watch } from "node:fs";
+import { readFile, stat } from "node:fs/promises";
 import { release } from "node:os";
 import { join } from "node:path";
 
@@ -24,13 +24,11 @@ import {
     shell
 } from "electron";
 import { STATIC_DIR } from "shared/paths";
-import { debounce } from "shared/utils/debounce";
 
 import { IpcEvents } from "../shared/IpcEvents";
 import { setBadgeCount } from "./appBadge";
 import { createArRPCWindow } from "./arrpcWindow";
 import { autoStart } from "./autoStart";
-import { VENCORD_QUICKCSS_FILE, VENCORD_THEMES_DIR } from "./constants";
 import { AppEvents } from "./events";
 import { getPlatformSpoofInfo } from "./gnuSpoofing";
 import { mainWin } from "./mainWindow";
@@ -193,49 +191,7 @@ function openDebugPage(page: string) {
 handle(IpcEvents.DEBUG_LAUNCH_GPU, () => openDebugPage("chrome://gpu"));
 handle(IpcEvents.DEBUG_LAUNCH_WEBRTC_INTERNALS, () => openDebugPage("chrome://webrtc-internals"));
 
-function readCss() {
-    return readFile(VENCORD_QUICKCSS_FILE, "utf-8").catch(() => "");
-}
-
-let quickCssWatcher: FSWatcher | null = null;
-let themesWatcher: FSWatcher | null = null;
-
-open(VENCORD_QUICKCSS_FILE, "a+")
-    .then(fd => {
-        fd.close();
-        quickCssWatcher = watch(
-            VENCORD_QUICKCSS_FILE,
-            { persistent: false },
-            debounce(async () => {
-                mainWin?.webContents.postMessage("VencordQuickCssUpdate", await readCss());
-            }, 50)
-        );
-    })
-    .catch(err => {
-        console.error("Failed to setup quickCss file watcher:", err);
-    });
-
-mkdirSync(VENCORD_THEMES_DIR, { recursive: true });
-themesWatcher = watch(
-    VENCORD_THEMES_DIR,
-    { persistent: false },
-    debounce(() => {
-        mainWin?.webContents.postMessage("VencordThemeUpdate", void 0);
-    })
-);
-
-export function cleanupFileWatchers() {
-    if (quickCssWatcher) {
-        quickCssWatcher.close();
-        quickCssWatcher = null;
-    }
-    if (themesWatcher) {
-        themesWatcher.close();
-        themesWatcher = null;
-    }
-}
-
-app.on("quit", cleanupFileWatchers);
+// The bundled runtime owns QuickCSS and theme watchers, including refresh cleanup.
 
 handle(IpcEvents.VOICE_STATE_CHANGED, (_, variant: string) => {
     AppEvents.emit("setTrayVariant", variant as any);

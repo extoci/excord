@@ -100,6 +100,19 @@ try {
     await Promise.all([page.waitForEvent("domcontentloaded"), page.evaluate(() => { void ExcordNative.refresh(); })]);
     await page.waitForFunction(() => (globalThis as Record<string, unknown>).__excordNativeProbe === "native:recovered", undefined, { timeout: 30000 });
     console.log("[smoke] Corrected source recovered");
+    const cssNotifications = await page.evaluate(() => new Promise<number>((resolve, reject) => {
+        let count = 0;
+        let settled: ReturnType<typeof setTimeout>;
+        const deadline = setTimeout(() => reject(new Error("QuickCSS did not update")), 5000);
+        VencordNative.quickCss.addChangeListener(() => {
+            count++;
+            clearTimeout(settled);
+            settled = setTimeout(() => { clearTimeout(deadline); resolve(count); }, 250);
+        });
+        void VencordNative.quickCss.set("/* Excord watcher regression probe */");
+    }));
+    assert.equal(cssNotifications, 1, "Refreshing must replace QuickCSS watchers instead of accumulating them");
+    console.log("[smoke] QuickCSS emitted one update after repeated refreshes");
     const diagnostics = await page.evaluate(() => ExcordNative.diagnostics());
     await mkdir("test-results", { recursive: true });
     await page.screenshot({ path: "test-results/electron-login.png" });
