@@ -6,7 +6,7 @@ This is an early implementation. It retains Equicord's plugin manager and Webpac
 
 The v0.1.0 development builds are attached to a private draft in [GitHub Releases](https://github.com/extoci/excord/releases). Read the [build notes](docs/v0.1.0.md) for verification results and the remaining manual checks.
 
-Release builds include English Chromium resources only. Discord's interface language remains selectable; some browser menus and messages fall back to English.
+See the [measured app sizes](docs/app-size.md) for the current package-size reductions. Release builds include English Chromium resources only. Discord's interface language remains selectable; some browser menus and messages fall back to English.
 
 ## Develop
 
