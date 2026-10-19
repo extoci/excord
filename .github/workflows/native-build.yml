@@ -55,6 +55,9 @@ jobs:
         run: bun x electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --publish never
       - name: Exercise the packaged application archive
         run: bun run check:package
+      - name: Verify shutdown without an inspector
+        timeout-minutes: 2
+        run: node --import tsx scripts/quit-smoke.mts --packaged
       - name: Exercise local plugins from the packaged archive
         timeout-minutes: 5
         run: bun run test:electron --packaged
