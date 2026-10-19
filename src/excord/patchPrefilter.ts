@@ -11,7 +11,7 @@ export class PatchPrefilter {
   getFindStrings(): string[] {
     return [...this.strings];
   }
-  private strings = new Set<string>();
+  private strings: string[] = [];
   private union: RegExp | undefined;
   private dirty = false;
   private expressions = new WeakMap<
@@ -21,14 +21,16 @@ export class PatchPrefilter {
 
   couldMatch(source: string, patches: readonly FindPatch[]): boolean {
     const expressions: RegExp[] = [];
+    let stringCount = 0;
     for (const patch of patches) {
       const find = patch.find;
       if (typeof find === "string") {
         if (!find.length) return true;
-        if (!this.strings.has(find)) {
-          this.strings.add(find);
+        if (this.strings[stringCount] !== find) {
+          this.strings[stringCount] = find;
           this.dirty = true;
         }
+        stringCount++;
       } else {
         // Custom matchers and sticky state must retain the original call order and effects.
         if (
@@ -45,13 +47,19 @@ export class PatchPrefilter {
         expressions.push(find);
       }
     }
+    if (this.strings.length !== stringCount) {
+      this.strings.length = stringCount;
+      this.dirty = true;
+    }
     if (this.dirty) {
       try {
-        this.union = new RegExp(
-          [...this.strings]
-            .map((value) => value.replace(special, "\\$&"))
-            .join("|"),
-        );
+        this.union = this.strings.length
+          ? new RegExp(
+              this.strings
+                .map((value) => value.replace(special, "\\$&"))
+                .join("|"),
+            )
+          : undefined;
       } catch {
         return true;
       }

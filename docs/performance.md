@@ -38,7 +38,7 @@ node --import tsx scripts/bench-patcher.mts \
   test-results/patch-corpus.json test-results/patcher-performance.json
 ```
 
-The runtime probe captures remaining patch-find patterns, available module text, and the optimized prefilter's retained historical string index after login. The replay seeds that exact historical index before timing and reports its setup cost separately, so removed patches cannot make the optimized replay artificially cheaper. The patcher benchmark runs the actual pinned `patchFactory` implementation with the original and optimized paths in isolated contexts. It tests factories that match no find pattern, alternates order across 20 trials, and records the corpus hash. It excludes replacement execution, successful matches, and whole-app startup. The raw Discord module corpus stays local and is not included in the verification artifact.
+The runtime probe captures remaining patch-find patterns, available module text, and the optimized prefilter's cached string index after login. The replay seeds that exact cached index before timing and reports its setup cost separately, and preserves the same first-scan state as the app. The prefilter rebuilds its index when the current ordered string patterns change, including removals; it does not retain obsolete patterns. The patcher benchmark runs the actual pinned `patchFactory` implementation with the original and optimized paths in isolated contexts. It tests factories that match no find pattern, alternates order across 20 trials, and records the corpus hash. It excludes replacement execution, successful matches, and whole-app startup. The raw Discord module corpus stays local and is not included in the verification artifact.
 
 ## Competitor comparisons
 

@@ -15,13 +15,13 @@ assert.ok(
 const input = await readFile(corpusFile, "utf8");
 const corpus = JSON.parse(input) as {
   buildNumber: number;
-  historicalFindStrings: string[];
+  indexedFindStrings: string[];
   sources: string[];
   patches: { find: string | { source: string; flags: string } }[];
 };
 assert.ok(
-  Array.isArray(corpus.historicalFindStrings),
-  "Capture the candidate historical string index before benchmarking",
+  Array.isArray(corpus.indexedFindStrings),
+  "Capture the candidate cached string index before benchmarking",
 );
 const source = await readFile(
   "vendor/equicord/src/webpack/patchWebpack.ts",
@@ -90,7 +90,7 @@ export {patchFactory};export const regexp=(source,flags)=>new RegExp(source,flag
   });
   if (label === "optimized") {
     const start = performance.now();
-    module.exports.seedHistory(corpus.historicalFindStrings);
+    module.exports.seedHistory(corpus.indexedFindStrings);
     historySeedMs[label] = performance.now() - start;
   }
   module.exports.patches.push(
@@ -129,7 +129,7 @@ const report = {
   availableFactories: corpus.sources.length,
   missFactories: sources.length,
   patchCount: corpus.patches.length,
-  historicalStringCount: corpus.historicalFindStrings.length,
+  indexedStringCount: corpus.indexedFindStrings.length,
   historySeedMs,
   coldMs: cold,
   samplesMs: samples,

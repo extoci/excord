@@ -14,6 +14,8 @@ test("the prefilter sees additions, replacements and regex state without consumi
   expect(filter.couldMatch("a.[b]", patches)).toBe(true);
   patches[0].find = "new";
   expect(filter.couldMatch("new", patches)).toBe(true);
+  expect(filter.couldMatch("a.[b]", patches)).toBe(false);
+  expect(filter.getFindStrings()).toEqual(["new"]);
   patches.push({ find: /needle/g });
   const expression = patches[1].find as RegExp;
   expression.lastIndex = 90;

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { execFileSync } from "node:child_process";
+import { execFileSync, type ChildProcess } from "node:child_process";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { cpus, release, tmpdir } from "node:os";
@@ -46,9 +46,10 @@ const variants = [
 ];
 const results: Record<string, unknown>[] = [];
 let current: ElectronApplication | undefined;
+let currentProcess: ChildProcess | undefined;
 const deadline = setTimeout(
   () => {
-    current?.process().kill();
+    currentProcess?.kill();
     console.error("Benchmark exceeded its deadline");
     process.exit(1);
   },
@@ -160,6 +161,7 @@ try {
         ],
         timeout: 60000,
       }));
+      currentProcess = application.process();
       let page = await application.firstWindow({ timeout: 60000 });
       const windowMs = performance.now() - started;
       const discordDeadline = Date.now() + 90000;
@@ -229,7 +231,7 @@ try {
                 ? p.find
                 : { source: p.find.source, flags: p.find.flags },
           })),
-          historicalFindStrings: (
+          indexedFindStrings: (
             Vencord.WebpackPatcher as unknown as {
               getExcordPatchFindStrings?(): string[];
             }
@@ -239,6 +241,7 @@ try {
           Array.isArray(corpus.patches) && corpus.patches.length > 0,
           "The runtime patch set was unavailable",
         );
+        await mkdir(dirname(resolve(values.corpus)), { recursive: true });
         await writeFile(values.corpus, JSON.stringify(corpus));
       }
       // A deterministic UI workload, reported separately from actual Discord idle CPU.
@@ -344,7 +347,6 @@ try {
   );
 } finally {
   clearTimeout(deadline);
-  if (current)
-    await close(current, root).catch(() => current?.process().kill());
+  if (current) await close(current, root).catch(() => currentProcess?.kill());
   await rm(root, { recursive: true, force: true, maxRetries: 5 });
 }
