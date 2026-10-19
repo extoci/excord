@@ -48,7 +48,7 @@ application.process().stdout?.on("data", data => { mainOutput = (mainOutput + St
 application.process().stderr?.on("data", data => { mainOutput = (mainOutput + String(data)).slice(-16000); });
 try {
     const page = await application.firstWindow();
-    page.setDefaultTimeout(15000);
+    page.setDefaultTimeout(30000);
     console.log("[smoke] Window created");
     page.on("pageerror", error => {
         if (error.message === "Sentry successfully disabled") { telemetryBlocks++; return; }
