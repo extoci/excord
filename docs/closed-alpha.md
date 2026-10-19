@@ -60,4 +60,4 @@ The Mac CI runner uses macOS 26 while the app declares macOS 27 as its minimum. 
 
 ## Developer Portal
 
-Enable Discord's Developer Mode under Settings → Advanced. Developer → Developer Portal then appears at the bottom of Settings. It opens Discord's real Developer Portal inside Excord. Use Back to Excord to return to the existing chat session, or Cmd/Ctrl+R to reload the portal. The portal uses the same browser session but receives no Excord bridge or modification preload. Test sign-in and unsaved form prompts before relying on it for application changes.
+Enable Discord's Developer Mode under Settings → Advanced. Developer → Developer Portal then appears at the bottom of Settings. Select that entry, then click Open Developer Portal to load Discord's real Developer Portal inside Excord. Use Back to Excord to return to the existing chat session, or Cmd/Ctrl+R to reload the portal. The portal uses the same browser session but receives no Excord bridge or modification preload. Test sign-in and unsaved form prompts before relying on it for application changes.

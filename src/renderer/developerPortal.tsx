@@ -17,7 +17,6 @@ export function DeveloperPortalIcon({ width = 20, height = 20 }: { width?: numbe
 export function DeveloperPortalLaunch() {
     const [error, setError] = React.useState(false);
     const open = () => { void ExcordNative.openDeveloperPortal().catch(() => setError(true)); };
-    React.useEffect(open, []);
     return <div className="excord-portal-launch"><h2>Developer Portal</h2>
         <p>{error ? "The portal couldn’t open. Try again." : "Manage your Discord applications and bots inside Excord. Your chat stays open in the background."}</p>
         <Button onClick={open}>Open Developer Portal</Button></div>;
