@@ -49,7 +49,7 @@ jobs:
         working-directory: candidate
       - run: bun run build
         working-directory: candidate
-      - name: Capture the initial patch set separately from timing trials
+      - name: Capture the remaining patch set and historical index separately from timing trials
         working-directory: candidate
         run: node --import tsx scripts/bench-runtime.mts --app . --rounds 1 --seconds 1 --output test-results/corpus-run.json --corpus test-results/patch-corpus.json
       - name: Compare five alternating pairs on one native host

@@ -117,6 +117,8 @@ try {
       const profile = join(root, `${variant.label}-${round}`);
       await mkdir(profile, { recursive: true });
       const environment = { ...process.env, EXCORD_USER_DATA_DIR: profile };
+      if (process.platform === "linux")
+        environment["XDG_CONFIG_HOME"] = join(profile, "xdg");
       if (values.client === "vesktop") {
         environment["VENCORD_USER_DATA_DIR"] = profile;
         await writeFile(
@@ -129,11 +131,16 @@ try {
           values.settings,
           "Pass the pinned Legcord default settings with doneSetup=true",
         );
-        await mkdir(join(profile, "chromium/storage"), { recursive: true });
-        await writeFile(
-          join(profile, "chromium/storage/settings.json"),
-          await readFile(values.settings, "utf8"),
-        );
+        for (const config of [
+          join(profile, "chromium/storage"),
+          join(profile, "xdg/legcord/storage"),
+        ]) {
+          await mkdir(config, { recursive: true });
+          await writeFile(
+            join(config, "settings.json"),
+            await readFile(values.settings, "utf8"),
+          );
+        }
       }
       delete environment.ELECTRON_RUN_AS_NODE;
       const started = performance.now();
@@ -153,13 +160,6 @@ try {
         ],
         timeout: 60000,
       }));
-      if (values.corpus && round === 0)
-        await application.context().addInitScript({
-          content: await readFile(
-            new URL("./fixtures/capture-patches.js", import.meta.url),
-            "utf8",
-          ),
-        });
       let page = await application.firstWindow({ timeout: 60000 });
       const windowMs = performance.now() - started;
       const discordDeadline = Date.now() + 90000;
@@ -223,12 +223,21 @@ try {
         const corpus = await page.evaluate(() => ({
           buildNumber: Vencord.WebpackPatcher.getBuildNumber(),
           sources: Object.values(Vencord.Webpack.wreq.m).map(String),
-          patches: (globalThis as any).__excordInitialPatchPatterns,
-          remainingPatches: Vencord.WebpackPatcher.patches.length,
+          patches: Vencord.WebpackPatcher.patches.map((p) => ({
+            find:
+              typeof p.find === "string"
+                ? p.find
+                : { source: p.find.source, flags: p.find.flags },
+          })),
+          historicalFindStrings: (
+            Vencord.WebpackPatcher as unknown as {
+              getExcordPatchFindStrings?(): string[];
+            }
+          ).getExcordPatchFindStrings?.(),
         }));
         assert.ok(
           Array.isArray(corpus.patches) && corpus.patches.length > 0,
-          "The pre-navigation startup patch probe did not run; do not benchmark a partial patch set",
+          "The runtime patch set was unavailable",
         );
         await writeFile(values.corpus, JSON.stringify(corpus));
       }

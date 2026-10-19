@@ -60,6 +60,19 @@ for (const platform of ["mac", "win"] as const) {
   ])
     assert.equal(recoveryProof[field], true, `${platform}: ${field}`);
   assert.deepEqual(pluginProof.errors, []);
+  const powerProof = JSON.parse(
+    await readFile(join(proofRoot, "power-smoke.json"), "utf8"),
+  );
+  for (const field of [
+    "idleThrottling",
+    "connectedRtcProtected",
+    "hiddenRtcEcho",
+    "hiddenAnimationPaused",
+    "foregroundAnimationResumed",
+    "settingAppliesImmediately",
+    "subframeHasNoNativeBridge",
+  ])
+    assert.equal(powerProof[field], true, `${platform}: ${field}`);
   const installerName =
     platform === "mac"
       ? `Excord-${metadata.version}-mac-arm64.dmg`
@@ -102,6 +115,10 @@ for (const platform of ["mac", "win"] as const) {
             "safe mode",
             "offline recovery",
             "diagnostics privacy",
+            "hidden animation suspension and foreground resumption",
+            "hidden local WebRTC data-channel echo",
+            "immediate power setting changes",
+            "main-frame-only native bridge",
           ],
           requiresDeviceVerification: [
             "Gatekeeper/SmartScreen",

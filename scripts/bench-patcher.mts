@@ -15,9 +15,14 @@ assert.ok(
 const input = await readFile(corpusFile, "utf8");
 const corpus = JSON.parse(input) as {
   buildNumber: number;
+  historicalFindStrings: string[];
   sources: string[];
   patches: { find: string | { source: string; flags: string } }[];
 };
+assert.ok(
+  Array.isArray(corpus.historicalFindStrings),
+  "Capture the candidate historical string index before benchmarking",
+);
 const source = await readFile(
   "vendor/equicord/src/webpack/patchWebpack.ts",
   "utf8",
@@ -39,6 +44,7 @@ assert.ok(
   "The corpus must contain real module-factory misses",
 );
 const factories = sources.map((text) => ({ toString: () => text }));
+const historySeedMs: Record<string, number> = {};
 const variants: {
   label: string;
   patch: (id: number, factory: object) => unknown;
@@ -62,6 +68,7 @@ const interpolateIfDefined=()=>'';
 const wreq={m:{927815:function(){console.warn("Trying to open a changelog for an invalid build number ${corpus.buildNumber}");}}};
 const findModuleFactory=()=>undefined;
 ${code}
+${label === "optimized" ? 'export function seedHistory(strings){ excordPatchPrefilter.couldMatch("__history_seed__", strings.map(find=>({find}))); }' : ""}
 export {patchFactory};export const regexp=(source,flags)=>new RegExp(source,flags);`,
       loader: "ts",
       resolveDir: process.cwd(),
@@ -81,6 +88,11 @@ export {patchFactory};export const regexp=(source,flags)=>new RegExp(source,flag
     module,
     exports: module.exports,
   });
+  if (label === "optimized") {
+    const start = performance.now();
+    module.exports.seedHistory(corpus.historicalFindStrings);
+    historySeedMs[label] = performance.now() - start;
+  }
   module.exports.patches.push(
     ...corpus.patches.map((p, i) => ({
       plugin: `probe-${i}`,
@@ -117,6 +129,8 @@ const report = {
   availableFactories: corpus.sources.length,
   missFactories: sources.length,
   patchCount: corpus.patches.length,
+  historicalStringCount: corpus.historicalFindStrings.length,
+  historySeedMs,
   coldMs: cold,
   samplesMs: samples,
   medianMs: medians,

@@ -15,7 +15,7 @@ export function optimizePatcher(source: string, prefilter: string): string {
   source = replaceOnce(
     source,
     "export const patches = [] as Patch[];",
-    `import { PatchPrefilter } from ${JSON.stringify(prefilter)};\nconst excordPatchPrefilter = new PatchPrefilter();\nexport const patches = [] as Patch[];`,
+    `import { PatchPrefilter } from ${JSON.stringify(prefilter)};\nconst excordPatchPrefilter = new PatchPrefilter();\nexport function getExcordPatchFindStrings() { return excordPatchPrefilter.getFindStrings(); }\nexport const patches = [] as Patch[];`,
   );
   const buildCheck = `        const buildNumber = getBuildNumber();
         const shouldCheckBuildNumber = buildNumber !== -1;

@@ -8,6 +8,9 @@ const special = /[.*+?^${}()|[\]\\]/g;
 
 /** A negative-only filter. A positive result always runs the original patcher. */
 export class PatchPrefilter {
+  getFindStrings(): string[] {
+    return [...this.strings];
+  }
   private strings = new Set<string>();
   private union: RegExp | undefined;
   private dirty = false;
