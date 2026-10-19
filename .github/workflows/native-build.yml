@@ -52,6 +52,19 @@ jobs:
         run: bun x electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --publish never
       - name: Exercise the packaged application archive
         run: bun run check:package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: debug-symbols-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            dist/js/*.js
+            dist/js/*.css
+            dist/js/*.map
+            static/runtime/*.js
+            static/runtime/*.css
+            static/runtime/*.map
+            static/runtime/modules.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Verify shutdown without an inspector
         timeout-minutes: 2
         run: node --import tsx scripts/quit-smoke.mts --packaged --refresh

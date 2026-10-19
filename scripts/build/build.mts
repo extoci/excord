@@ -24,7 +24,8 @@ try {
 const CommonOpts: BuildOptions = {
     minify: !isDev,
     bundle: true,
-    sourcemap: "linked",
+    // Release maps are retained as separate CI artifacts, outside the installed app.
+    sourcemap: isDev ? "linked" : "external",
     logLevel: "info",
     metafile: true
 };

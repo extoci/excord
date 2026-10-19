@@ -16,6 +16,10 @@ The primary artifacts are an Apple silicon DMG and ZIP, plus a Windows x64 insta
 
 CI artifacts stay private with the repository. Verification artifacts include the smoke-test report and a screenshot of the logged-out app. They contain no Discord credentials.
 
+Release packages exclude generated source maps and the renderer's build report. The matching JavaScript, CSS, and maps remain in a separate `debug-symbols-*` CI artifact for 14 days. Development builds still link their source maps. Local plugins keep their own inline maps so plugin authors retain useful error locations.
+
+Installers and archives use maximum compression. This changes packaging time and download size, not the code Electron executes. `bun run check:package` rejects accidentally bundled maps and reports ASAR bytes, compiler bytes, total installed regular-file bytes, the largest files, and installer/archive sizes in `test-results/package.json`. Installed bytes exclude symlinks and filesystem allocation overhead. Keep Chromium locales, graphics fallbacks, plugin definitions, the local compiler, and license notices in the release.
+
 ## Draft and tagged releases
 
 To prepare a private draft, run the Release workflow manually from GitHub Actions. It builds and verifies both native targets, then creates a draft release for the version in package.json.

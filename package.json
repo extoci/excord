@@ -115,6 +115,7 @@
     "appId": "app.excord.desktop",
     "productName": "Excord",
     "executableName": "excord",
+    "compression": "maximum",
     "files": [
       "!*",
       "dist/js",
@@ -124,7 +125,9 @@
       "THIRD_PARTY_NOTICES.md",
       "node_modules/esbuild/**",
       "node_modules/@esbuild/**",
-      "!static/dist/arrpc-*"
+      "!static/dist/arrpc-*",
+      "!**/*.map",
+      "!static/runtime/bundle-report.json"
     ],
     "protocols": {
       "name": "Discord",

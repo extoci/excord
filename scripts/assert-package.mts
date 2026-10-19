@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { access, mkdir, stat, writeFile } from "node:fs/promises";
+import { access, lstat, mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 
 const require = createRequire(import.meta.url);
 const { listPackage, extractFile } = require("@electron/asar") as { listPackage(path: string): string[]; extractFile(path: string, file: string): Buffer };
@@ -18,11 +18,36 @@ const desktopNotices = extractFile(archive, join("dist", "js", "THIRD_PARTY_LICE
 assert.match(desktopNotices, /Copyright \(c\) 2022 OpenAsar/, "The RPC worker's license notice must accompany its bundled code");
 assert.match(desktopNotices, /Permission is hereby granted/);
 assert.ok(![...entries].some(path => /arrpc-bun|\/static\/dist\/arrpc-/.test(path)), "A standalone RPC runtime must not ship");
+assert.ok(![...entries].some(path => path.endsWith(".map")), "Debug source maps belong in the separate CI artifact, not the app");
+assert.ok(!entries.has("/static/runtime/bundle-report.json"), "Build reports must not ship in the app");
 const executable = process.platform === "win32" ? `@esbuild/win32-${process.arch}/esbuild.exe` : `@esbuild/${process.platform}-${process.arch}/bin/esbuild`;
 const binary = join(`${archive}.unpacked`, "node_modules", executable);
 await access(binary);
+
+// Logical regular-file bytes, excluding symlinks and filesystem allocation overhead.
+// Keep the runtime and unpacked compiler in this total so ASAR savings cannot hide growth elsewhere.
+const appDirectory = resolve(dirname(archive), process.platform === "darwin" ? "../.." : "..");
+async function inventory(directory: string): Promise<{ path: string; bytes: number }[]> {
+    const files: { path: string; bytes: number }[] = [];
+    for (const name of await readdir(directory)) {
+        const path = join(directory, name);
+        const info = await lstat(path);
+        if (info.isDirectory()) files.push(...await inventory(path));
+        else if (info.isFile()) files.push({ path: relative(appDirectory, path).replaceAll("\\", "/"), bytes: info.size });
+    }
+    return files;
+}
+const files = await inventory(appDirectory);
+const artifacts: { name: string; bytes: number }[] = [];
+for (const name of await readdir("dist")) {
+    if (/^Excord.*\.(zip|dmg|exe|AppImage)$/.test(name)) artifacts.push({ name, bytes: (await stat(join("dist", name))).size });
+}
 const report = { archiveBytes: (await stat(archive)).size, compilerBinaryBytes: (await stat(binary)).size,
-    entries: entries.size, platform: process.platform, architecture: process.arch, hasStandaloneRpcRuntime: false };
+    entries: entries.size, platform: process.platform, architecture: process.arch, hasStandaloneRpcRuntime: false,
+    electronVersion: JSON.parse(await readFile("node_modules/electron/package.json", "utf8")).version,
+    installedFileBytes: files.reduce((sum, file) => sum + file.bytes, 0),
+    largestFiles: files.sort((a, b) => b.bytes - a.bytes).slice(0, 10), artifacts,
+    hasSourceMaps: false };
 await mkdir("test-results", { recursive: true });
 await writeFile("test-results/package.json", JSON.stringify(report, null, 2));
 console.log(JSON.stringify(report, null, 2));
