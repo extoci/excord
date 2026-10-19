@@ -1,0 +1,106 @@
+{
+  "mac": {
+    "label": "Mac arm64",
+    "cpu": "Apple M2 Pro (Virtual)",
+    "metrics": [
+      {
+        "name": "Hidden workload CPU",
+        "unit": "% of one core",
+        "before": 11.191064506646791,
+        "after": 0.14247093878638975,
+        "change": -98.72692237005897,
+        "optimized": true
+      },
+      {
+        "name": "Patch-miss replay",
+        "unit": "ms",
+        "before": 151.07770900000014,
+        "after": 61.78404200000023,
+        "change": -59.104461929588716,
+        "optimized": true
+      },
+      {
+        "name": "First window",
+        "unit": "ms",
+        "before": 668.1354169999831,
+        "after": 712.015625,
+        "change": 6.567562036607022,
+        "optimized": false
+      },
+      {
+        "name": "Working-set sum",
+        "unit": "MiB",
+        "before": 945.953125,
+        "after": 956.9375,
+        "change": 1.161196544490517,
+        "optimized": false
+      }
+    ],
+    "hiddenFrames": {
+      "baseline": 209,
+      "candidate": 0
+    },
+    "hiddenRange": {
+      "baseline": [
+        8.86894706062373,
+        12.745172483467615
+      ],
+      "candidate": [
+        0.12919424249515926,
+        0.25051469204232585
+      ]
+    }
+  },
+  "win": {
+    "label": "Windows x64",
+    "cpu": "AMD EPYC 9V74 80-Core Processor                ",
+    "metrics": [
+      {
+        "name": "Hidden workload CPU",
+        "unit": "% of one core",
+        "before": 7.892119412883628,
+        "after": 0.2148597773601474,
+        "change": -97.27754021296997,
+        "optimized": true
+      },
+      {
+        "name": "Patch-miss replay",
+        "unit": "ms",
+        "before": 251.08160000000044,
+        "after": 110.39829999999984,
+        "change": -56.030907880147474,
+        "optimized": true
+      },
+      {
+        "name": "First window",
+        "unit": "ms",
+        "before": 1787.6661999999778,
+        "after": 1181.7911000000313,
+        "change": -33.891959248317946,
+        "optimized": false
+      },
+      {
+        "name": "Working-set sum",
+        "unit": "MiB",
+        "before": 721.4609375,
+        "after": 724.74609375,
+        "change": 0.45534776441031877,
+        "optimized": false
+      }
+    ],
+    "hiddenFrames": {
+      "baseline": 321,
+      "candidate": 0
+    },
+    "hiddenRange": {
+      "baseline": [
+        4.783124867771757,
+        16.438946443576775
+      ],
+      "candidate": [
+        0.08051073869941788,
+        0.5690020182879583
+      ]
+    }
+  }
+}

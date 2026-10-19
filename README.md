@@ -6,6 +6,8 @@ This is an early implementation. It retains Equicord's plugin manager and Webpac
 
 The 0.1.1-alpha.2 candidate adds activity-aware background scheduling and a patch-matching optimization, alongside recovery controls and installer verification. Read the [alpha guide](docs/closed-alpha.md) and [device checklist](docs/alpha-checklist.md) before inviting testers. Builds remain in private drafts in [GitHub Releases](https://github.com/extoci/excord/releases).
 
+Native CI comparisons against the previous Excord build measured 97.3% less CPU on Windows and 98.7% less on Mac for a hidden animation workload. The patch-miss replay took 56% less time on Windows and 59% less on Mac, with the catalog enabled. These are specific workload results. Overall startup and RAM advantages are unproven. Read the [methods and raw measurements](docs/performance.md).
+
 See the [measured app sizes](docs/app-size.md) for the current package-size reductions. Release builds include English Chromium resources only. Discord's interface language remains selectable; some browser menus and messages fall back to English.
 
 ## Develop

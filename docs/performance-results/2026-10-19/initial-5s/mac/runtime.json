@@ -1,0 +1,428 @@
+{
+  "schemaVersion": 1,
+  "environment": {
+    "platform": "darwin",
+    "architecture": "arm64",
+    "osRelease": "25.6.0",
+    "cpu": "Apple M2 Pro (Virtual)",
+    "headless": false,
+    "softwareRendering": false,
+    "instrumented": false,
+    "freshProfilePerRun": true,
+    "client": "excord",
+    "executable": "/Users/runner/work/excord/excord/candidate/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron",
+    "sampleMs": 5000
+  },
+  "variants": [
+    {
+      "label": "baseline",
+      "app": "/Users/runner/work/excord/excord/baseline"
+    },
+    {
+      "label": "candidate",
+      "app": "/Users/runner/work/excord/excord/candidate"
+    }
+  ],
+  "results": [
+    {
+      "label": "baseline",
+      "app": "/Users/runner/work/excord/excord/baseline",
+      "round": 0,
+      "versions": {
+        "version": "0.1.1-alpha.1",
+        "electron": "43.8.0",
+        "chromium": "150.0.7871.250"
+      },
+      "windowMs": 524.45075,
+      "loginMs": 4102.0445,
+      "idleCpuPercent": 2.538432371459498,
+      "workingSetMiB": 1049.125,
+      "runtime": {
+        "plugins": 380,
+        "aliases": 1422,
+        "enabled": 20
+      },
+      "visible": {
+        "milliseconds": 5014.213582999999,
+        "cpuPercent": 3.256682175518731,
+        "frames": 263,
+        "ticks": 50,
+        "hidden": false
+      },
+      "hidden": {
+        "milliseconds": 5003.234,
+        "cpuPercent": 3.2711841980606957,
+        "frames": 246,
+        "ticks": 50,
+        "hidden": false
+      },
+      "resumed": {
+        "milliseconds": 5003.437707999998,
+        "cpuPercent": 3.9151281865024568,
+        "frames": 214,
+        "ticks": 50,
+        "hidden": false
+      }
+    },
+    {
+      "label": "candidate",
+      "app": "/Users/runner/work/excord/excord/candidate",
+      "round": 0,
+      "versions": {
+        "version": "0.1.1-alpha.2",
+        "electron": "43.8.0",
+        "chromium": "150.0.7871.250"
+      },
+      "windowMs": 597.5967500000006,
+      "loginMs": 4062.497083000002,
+      "idleCpuPercent": 2.990741156806233,
+      "workingSetMiB": 1059.421875,
+      "runtime": {
+        "plugins": 380,
+        "aliases": 1422,
+        "enabled": 20
+      },
+      "visible": {
+        "milliseconds": 5002.528874999996,
+        "cpuPercent": 4.295827277958497,
+        "frames": 265,
+        "ticks": 50,
+        "hidden": false
+      },
+      "hidden": {
+        "milliseconds": 5006.070542000001,
+        "cpuPercent": 0.14560322190521313,
+        "frames": 0,
+        "ticks": 5,
+        "hidden": true
+      },
+      "resumed": {
+        "milliseconds": 5007.106875000005,
+        "cpuPercent": 4.2676740348187545,
+        "frames": 244,
+        "ticks": 50,
+        "hidden": false
+      }
+    },
+    {
+      "label": "candidate",
+      "app": "/Users/runner/work/excord/excord/candidate",
+      "round": 1,
+      "versions": {
+        "version": "0.1.1-alpha.2",
+        "electron": "43.8.0",
+        "chromium": "150.0.7871.250"
+      },
+      "windowMs": 473.53862500000105,
+      "loginMs": 3352.234209000002,
+      "idleCpuPercent": 2.9894540330252175,
+      "workingSetMiB": 1068.515625,
+      "runtime": {
+        "plugins": 380,
+        "aliases": 1422,
+        "enabled": 20
+      },
+      "visible": {
+        "milliseconds": 5001.923416999998,
+        "cpuPercent": 4.238309592655649,
+        "frames": 233,
+        "ticks": 50,
+        "hidden": false
+      },
+      "hidden": {
+        "milliseconds": 5010.208541999993,
+        "cpuPercent": 0.2081350489222789,
+        "frames": 0,
+        "ticks": 5,
+        "hidden": true
+      },
+      "resumed": {
+        "milliseconds": 5014.17637500001,
+        "cpuPercent": 5.045155596466226,
+        "frames": 234,
+        "ticks": 50,
+        "hidden": false
+      }
+    },
+    {
+      "label": "baseline",
+      "app": "/Users/runner/work/excord/excord/baseline",
+      "round": 1,
+      "versions": {
+        "version": "0.1.1-alpha.1",
+        "electron": "43.8.0",
+        "chromium": "150.0.7871.250"
+      },
+      "windowMs": 500.4357080000045,
+      "loginMs": 3137.209833000001,
+      "idleCpuPercent": 3.8735191116546615,
+      "workingSetMiB": 1048.625,
+      "runtime": {
+        "plugins": 380,
+        "aliases": 1422,
+        "enabled": 20
+      },
+      "visible": {
+        "milliseconds": 5008.4230830000015,
+        "cpuPercent": 8.238501283977891,
+        "frames": 222,
+        "ticks": 50,
+        "hidden": false
+      },
+      "hidden": {
+        "milliseconds": 5007.78125,
+        "cpuPercent": 7.887784635161528,
+        "frames": 223,
+        "ticks": 50,
+        "hidden": false
+      },
+      "resumed": {
+        "milliseconds": 5006.990124999997,
+        "cpuPercent": 3.9516754589165433,
+        "frames": 231,
+        "ticks": 50,
+        "hidden": false
+      }
+    },
+    {
+      "label": "baseline",
+      "app": "/Users/runner/work/excord/excord/baseline",
+      "round": 2,
+      "versions": {
+        "version": "0.1.1-alpha.1",
+        "electron": "43.8.0",
+        "chromium": "150.0.7871.250"
+      },
+      "windowMs": 527.8726660000102,
+      "loginMs": 3201.613458000007,
+      "idleCpuPercent": 5.654664875839961,
+      "workingSetMiB": 1059.484375,
+      "runtime": {
+        "plugins": 380,
+        "aliases": 1422,
+        "enabled": 20
+      },
+      "visible": {
+        "milliseconds": 5007.16070800001,
+        "cpuPercent": 8.221605496749294,
+        "frames": 230,
+        "ticks": 50,
+        "hidden": false
+      },
+      "hidden": {
+        "milliseconds": 5008.693083999999,
+        "cpuPercent": 6.421735063533402,
+        "frames": 223,
+        "ticks": 50,
+        "hidden": false
+      },
+      "resumed": {
+        "milliseconds": 5003.008167000022,
+        "cpuPercent": 7.149638538657191,
+        "frames": 219,
+        "ticks": 50,
+        "hidden": false
+      }
+    },
+    {
+      "label": "candidate",
+      "app": "/Users/runner/work/excord/excord/candidate",
+      "round": 2,
+      "versions": {
+        "version": "0.1.1-alpha.2",
+        "electron": "43.8.0",
+        "chromium": "150.0.7871.250"
+      },
+      "windowMs": 678.518624999997,
+      "loginMs": 3953.703708999994,
+      "idleCpuPercent": 5.438508668552874,
+      "workingSetMiB": 1071.4375,
+      "runtime": {
+        "plugins": 380,
+        "aliases": 1422,
+        "enabled": 20
+      },
+      "visible": {
+        "milliseconds": 5006.951624999987,
+        "cpuPercent": 6.740628335908894,
+        "frames": 218,
+        "ticks": 50,
+        "hidden": false
+      },
+      "hidden": {
+        "milliseconds": 5003.047499999986,
+        "cpuPercent": 0.2140295489898834,
+        "frames": 0,
+        "ticks": 5,
+        "hidden": true
+      },
+      "resumed": {
+        "milliseconds": 5007.963375000021,
+        "cpuPercent": 7.009595991703886,
+        "frames": 230,
+        "ticks": 50,
+        "hidden": false
+      }
+    },
+    {
+      "label": "candidate",
+      "app": "/Users/runner/work/excord/excord/candidate",
+      "round": 3,
+      "versions": {
+        "version": "0.1.1-alpha.2",
+        "electron": "43.8.0",
+        "chromium": "150.0.7871.250"
+      },
+      "windowMs": 559.9210000000021,
+      "loginMs": 3846.673624999996,
+      "idleCpuPercent": 4.735686874159362,
+      "workingSetMiB": 1056.9375,
+      "runtime": {
+        "plugins": 380,
+        "aliases": 1422,
+        "enabled": 20
+      },
+      "visible": {
+        "milliseconds": 5006.215708000003,
+        "cpuPercent": 6.909610375901917,
+        "frames": 200,
+        "ticks": 50,
+        "hidden": false
+      },
+      "hidden": {
+        "milliseconds": 5004.9487500000105,
+        "cpuPercent": 0.10819291606133813,
+        "frames": 0,
+        "ticks": 5,
+        "hidden": true
+      },
+      "resumed": {
+        "milliseconds": 5007.317499999976,
+        "cpuPercent": 4.460771660674621,
+        "frames": 211,
+        "ticks": 50,
+        "hidden": false
+      }
+    },
+    {
+      "label": "baseline",
+      "app": "/Users/runner/work/excord/excord/baseline",
+      "round": 3,
+      "versions": {
+        "version": "0.1.1-alpha.1",
+        "electron": "43.8.0",
+        "chromium": "150.0.7871.250"
+      },
+      "windowMs": 581.0242080000171,
+      "loginMs": 3983.123583000008,
+      "idleCpuPercent": 5.0426815236801685,
+      "workingSetMiB": 1065.25,
+      "runtime": {
+        "plugins": 380,
+        "aliases": 1422,
+        "enabled": 20
+      },
+      "visible": {
+        "milliseconds": 5003.422416999994,
+        "cpuPercent": 7.959771668425181,
+        "frames": 218,
+        "ticks": 50,
+        "hidden": false
+      },
+      "hidden": {
+        "milliseconds": 5008.3168749999895,
+        "cpuPercent": 7.668564301854422,
+        "frames": 197,
+        "ticks": 50,
+        "hidden": false
+      },
+      "resumed": {
+        "milliseconds": 5011.467917000002,
+        "cpuPercent": 7.194179549209305,
+        "frames": 213,
+        "ticks": 50,
+        "hidden": false
+      }
+    },
+    {
+      "label": "baseline",
+      "app": "/Users/runner/work/excord/excord/baseline",
+      "round": 4,
+      "versions": {
+        "version": "0.1.1-alpha.1",
+        "electron": "43.8.0",
+        "chromium": "150.0.7871.250"
+      },
+      "windowMs": 527.5137910000049,
+      "loginMs": 3626.941665999999,
+      "idleCpuPercent": 5.136405671048208,
+      "workingSetMiB": 1052.53125,
+      "runtime": {
+        "plugins": 380,
+        "aliases": 1422,
+        "enabled": 20
+      },
+      "visible": {
+        "milliseconds": 5004.100832999975,
+        "cpuPercent": 7.826840686685303,
+        "frames": 216,
+        "ticks": 50,
+        "hidden": false
+      },
+      "hidden": {
+        "milliseconds": 5006.886541999993,
+        "cpuPercent": 5.4168992591484315,
+        "frames": 209,
+        "ticks": 50,
+        "hidden": false
+      },
+      "resumed": {
+        "milliseconds": 5005.232208000001,
+        "cpuPercent": 7.715466215189032,
+        "frames": 201,
+        "ticks": 50,
+        "hidden": false
+      }
+    },
+    {
+      "label": "candidate",
+      "app": "/Users/runner/work/excord/excord/candidate",
+      "round": 4,
+      "versions": {
+        "version": "0.1.1-alpha.2",
+        "electron": "43.8.0",
+        "chromium": "150.0.7871.250"
+      },
+      "windowMs": 554.7318749999977,
+      "loginMs": 3606.7338750000345,
+      "idleCpuPercent": 5.625186290327304,
+      "workingSetMiB": 1055.8125,
+      "runtime": {
+        "plugins": 380,
+        "aliases": 1422,
+        "enabled": 20
+      },
+      "visible": {
+        "milliseconds": 5009.069083000009,
+        "cpuPercent": 10.437528238018894,
+        "frames": 208,
+        "ticks": 50,
+        "hidden": false
+      },
+      "hidden": {
+        "milliseconds": 5010.825666999968,
+        "cpuPercent": 0.42142755312904706,
+        "frames": 0,
+        "ticks": 5,
+        "hidden": true
+      },
+      "resumed": {
+        "milliseconds": 5013.414916999987,
+        "cpuPercent": 9.562025244997312,
+        "frames": 206,
+        "ticks": 50,
+        "hidden": false
+      }
+    }
+  ]
+}
