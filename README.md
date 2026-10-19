@@ -1,39 +1,81 @@
 # Excord
 
-Excord wraps Discord's website in an opinionated desktop app. The first version targets Apple silicon Macs and Windows x64. It bundles Equicord's plugin catalog and adds local TypeScript plugin folders that rebuild when you refresh.
+Excord is an alternative way to use Discord, by wrapping the web app in Electron.
 
-This is an early implementation. It retains Equicord's plugin manager and Webpack patcher for compatibility, and derives its desktop integration from Equibop and Vesktop. It is not a completed rewrite of those projects. See `upstream.lock.json` for the exact source revisions.
+> "Yeah bro it's like [Legcord](https://github.com/legcord/legcord) but basically built on top of [Equibop](https://github.com/Equicord/equibop) which is a a fork of [Vesktop](https://github.com/Vencord/Vesktop) which is a wrapper of the Discord web app but with [Vencord](https://github.com/Vendicated/Vencord) on it but with [Equicord](https://github.com/Equicord/Equicord) on it which is a fork of Vencord which is basically like [BetterDiscord](https://github.com/betterdiscord/betterdiscord) but better"
 
-The 0.1.1-alpha.3 candidate adds an embedded Developer Portal and enables Experiments for new profiles. It includes activity-aware background scheduling, a patch-matching optimization, recovery controls, and installer verification. Read the [alpha guide](docs/closed-alpha.md) and [device checklist](docs/alpha-checklist.md) before inviting testers. Builds remain in private drafts in [GitHub Releases](https://github.com/extoci/excord/releases).
+It's also built to be extensible. Personal plugins are simply TypeScript files in a folder.
 
-Native CI comparisons against the previous Excord build measured 97.3% less CPU on Windows and 98.7% less on Mac for a hidden animation workload. The patch-miss replay took 56% less time on Windows and 59% less on Mac, with the catalog enabled. These are specific workload results. Overall startup and RAM advantages are unproven. Read the [methods and raw measurements](docs/performance.md).
+Excord's defaults are opinionated, using the mindset of "go away and let me do my job".
 
-See the [measured app sizes](docs/app-size.md) for the current package-size reductions. Release builds include English Chromium resources only. Discord's interface language remains selectable; some browser menus and messages fall back to English.
+**Warning:** Excord is still in early alpha. While it *probably* won't break horribly, don't rely on it as your only Discord client.
 
-The next release enables the bundled Experiments plugin by default for new profiles. Existing saved plugin choices remain unchanged.
+Get it from the [releases page](https://github.com/extoci/excord/releases).
 
-## Develop
+## The slop line
 
-Install Bun 1.4 or later and Node 22 or later, then run:
+Everything below here was written by agents.
+
+## Install
+
+The current alpha targets Apple silicon Macs running macOS 27+ and Windows x64.
+
+On Mac, open the DMG and drag Excord into Applications. On Windows, run the Setup executable. Updates are manual for now. Install the next version over the existing one to keep your login, settings, and plugins.
+
+The [alpha guide](docs/closed-alpha.md) covers installation and recovery. There's also a [device checklist](docs/alpha-checklist.md) for testing calls, screen sharing, and the other things you probably expect a Discord client to do.
+
+## Personal plugins
+
+Open Discord Settings → Excord Settings. Click **Create plugin**, or use **Open plugins folder** to add one yourself:
+
+```text
+plugins/
+└── my-plugin/
+    └── index.ts
+```
+
+Use the Vencord/Equicord plugin API. Edit the files, then press Cmd+R on Mac or Ctrl+R on Windows. Excord compiles the changed plugins and refreshes Discord. You don't need to restart the app or set up a separate build process.
+
+Your plugins appear in the normal Plugins page. Compilation errors appear in Excord Settings, and a broken plugin doesn't stop the others from loading.
+
+The [plugin guide](docs/local-plugins.md) has a minimal example, supported imports, and instructions for native helpers.
+
+## Defaults
+
+Plugin announcement popups are disabled for everyone, including existing profiles. You can browse the catalog yourself in Settings.
+
+Experiments is enabled by default on new profiles. Your saved choices still apply when upgrading.
+
+Chromium ships with English language resources. Discord's own interface language is still your choice.
+
+## Developer Portal
+
+Enable Developer Mode under Discord Settings → Advanced. A Developer Portal entry appears at the bottom of Settings. Select it, then click **Open Developer Portal**.
+
+It loads the real Discord Developer Portal inside Excord. **Back to Excord** returns to your existing chat session.
+
+## Development
+
+Requires Bun 1.4+ and Node 22+.
 
 ```sh
 bun install --frozen-lockfile
-bun run build
 bun run start
 ```
 
-`bun run typecheck` uses `tsc-rs` from pingdotgg/ts-rust. `bun run typecheck:reference` cross-checks with TypeScript. Run `bun test tests` for the local compiler and origin checks.
+Run the checks with:
 
-After a build, `bun run test:rpc` checks the optional RPC worker. `bun run test:electron` exercises local plugins against the real Discord login page. GitHub Actions runs both on native Apple silicon and Windows runners, builds installers, and repeats plugin checks from the packaged archive.
+```sh
+bun run check
+bun run typecheck:reference
+```
 
-## Local plugins
+`bun run check` uses [ts-rust](https://github.com/pingdotgg/ts-rust) for type checking and runs the tests. The reference check uses TypeScript's compiler.
 
-Open Excord Settings and create a plugin, or put a folder containing `index.ts` or `index.tsx` in Excord's plugins directory. Use the Vencord plugin API. Press Cmd+R or Ctrl+R to compile changed folders and reload the page. Excord reports compilation and loading errors in its settings page.
-
-Plugins execute in your Discord session. A plugin with `native.ts` can also execute Node code on your computer. Only install code you trust.
-
-Read the [plugin guide](docs/local-plugins.md), [compatibility record](docs/compatibility.md), and [release instructions](docs/releases.md).
+Read the [performance measurements](docs/performance.md), [app size results](docs/app-size.md), and [compatibility notes](docs/compatibility.md) for what we've measured and how the bundled runtime works. The [release guide](docs/releases.md) covers packaging and distribution.
 
 ## Credits and license
 
-Excord is GPL-3.0-or-later. The desktop code derives from [Equibop](https://github.com/Equicord/Equibop) and [Vesktop](https://github.com/Vencord/Vesktop). The bundled modification runtime derives from [Equicord](https://github.com/Equicord/Equicord) and [Vencord](https://github.com/Vendicated/Vencord). Original copyright notices remain in their source files. Excord is independent of those projects and Discord.
+Excord is GPL-3.0-or-later. The desktop code comes from [Equibop](https://github.com/Equicord/Equibop) and [Vesktop](https://github.com/Vencord/Vesktop). The bundled plugin runtime comes from [Equicord](https://github.com/Equicord/Equicord) and [Vencord](https://github.com/Vendicated/Vencord).
+
+The original copyright notices remain in the source files. [upstream.lock.json](upstream.lock.json) records the bundled revisions. Excord is an independent project.
