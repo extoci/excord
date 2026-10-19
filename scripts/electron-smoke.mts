@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
@@ -134,43 +135,31 @@ try {
     throw error;
 } finally {
     console.log("[smoke] Closing Electron");
-    await application.evaluate(({ app }) => {
+    const quitMarker = join(profile, "automation-quit");
+    await application.evaluate(({ app }, marker) => {
         for (const event of ["before-quit", "will-quit", "quit"] as const)
             app.on(event, () => console.log(`[smoke] App event: ${event}`));
-    }).catch(() => {});
+        app.once("quit", () => process.getBuiltinModule("fs").writeFileSync(marker, "quit"));
+    }, quitMarker).catch(() => {});
     application.process().on("exit", (code, signal) => console.log("[smoke] Electron process exit", code, signal));
-    let forcedShutdown = false;
+    let cleanupTimedOut = false;
     const shutdown = setTimeout(() => {
-        forcedShutdown = true;
+        let reachedQuit = false;
+        try { reachedQuit = readFileSync(quitMarker, "utf8") === "quit"; } catch {}
+        const knownWindowsTeardown = process.platform === "win32" && reachedQuit;
+        cleanupTimedOut = !knownWindowsTeardown;
+        if (knownWindowsTeardown) console.log("[smoke] Terminating the Windows automation host after its recorded quit event; normal shutdown is verified separately");
         console.error("[smoke] Shutdown output", mainOutput);
-        if (process.platform === "win32") {
-            try {
-                console.error(execFileSync("powershell.exe", ["-NoProfile", "-Command", "Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'electron|esbuild|Excord' } | Select-Object Name,ProcessId,ParentProcessId | ConvertTo-Json"], { encoding: "utf8", timeout: 5000 }));
-            } catch (error) { console.error(error); }
-        }
         if (process.platform === "win32" && application.process().pid) {
             try { execFileSync("taskkill", ["/pid", String(application.process().pid), "/T", "/F"], { timeout: 5000 }); }
             catch { /* The process may have exited while diagnostics were being collected. */ }
         } else application.process().kill();
     }, 10000);
     shutdown.unref();
-    const exited = new Promise<void>(resolve => application.process().once("exit", () => resolve()));
-    // Finish the inspector evaluation before requesting quit. On Windows, quitting while
-    // the debugger is attached can leave Electron alive after its quit event.
-    await application.evaluate(({ app }) => {
-        // The separate quit smoke checks the unmodified executable and ASAR after five
-        // refreshes. Windows' automation host can otherwise remain alive after quit.
-        if (process.platform === "win32") app.once("quit", () => process.exit(0));
-        setTimeout(() => {
-            process.getBuiltinModule("inspector").close();
-            app.quit();
-        }, 0);
-    }).catch(() => {});
-    await exited;
     await application.close().catch(() => {});
     console.log("[smoke] Electron closed");
     clearTimeout(shutdown);
     clearTimeout(deadline);
     await rm(profile, { recursive: true, force: true, maxRetries: 5 });
-    assert.equal(forcedShutdown, false, "Browser automation cleanup exceeded its deadline");
+    assert.equal(cleanupTimedOut, false, "Browser automation cleanup timed out before a recorded quit event");
 }
