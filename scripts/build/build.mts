@@ -10,6 +10,7 @@ import { copyFile } from "fs/promises";
 
 import vencordDep from "./vencordDep.mjs";
 import { includeDirPlugin } from "./includeDirPlugin.mts";
+import { writeDependencyLicenses } from "./licenses.mts";
 
 const isDev = process.argv.includes("--dev");
 
@@ -24,7 +25,8 @@ const CommonOpts: BuildOptions = {
     minify: !isDev,
     bundle: true,
     sourcemap: "linked",
-    logLevel: "info"
+    logLevel: "info",
+    metafile: true
 };
 
 const NodeCommonOpts: BuildOptions = {
@@ -148,6 +150,8 @@ if (watch) {
 			return result;
 		}),
 	);
+
+    await writeDependencyLicenses(results.map(result => result.metafile!), process.cwd(), "dist/js/THIRD_PARTY_LICENSES.txt");
 
 	for (const result of results) {
 		if (result.metafile) {

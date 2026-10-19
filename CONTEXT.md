@@ -10,6 +10,8 @@ Use Bun 1.4 and Node 22 or later. `bun install --frozen-lockfile` installs the p
 
 After a build, `bun run test:rpc` checks the Node RPC worker. `bun run test:electron` loads the real Discord login page, tests renderer and native module sharing, and exercises refresh, cache hits, syntax-error isolation, and recovery. It uses an isolated temporary profile and requires a display on Linux. `bun run test:electron --packaged` checks the packaged ASAR produced by electron-builder. GitHub Actions builds and verifies on native Apple silicon and Windows runners.
 
+`node --import tsx scripts/quit-smoke.mts --packaged --refresh` checks normal executable shutdown after five refreshes without an inspector. `--archive --refresh` checks the ASAR the same way. These checks fail on forced shutdown. Windows browser automation has a separate, documented teardown workaround after a recorded quit event; keep the independent shutdown checks strict.
+
 The Excord settings component has a standalone development preview at `bun run scripts/preview-control.mts`. Its banner identifies its sample metrics and fake folder operations. It uses the actual component, but it is not a substitute for the Electron tests.
 
 ## Main modules
@@ -21,6 +23,8 @@ The Excord settings component has a standalone development preview at `bun run s
 `src/excord/service.ts` owns the privileged desktop API, native helper registration and replacement, serialized refreshes, and on-demand process metrics. `src/excord/runtime.ts` registers renderer definitions before the upstream plugin manager initializes.
 
 `src/main/arrpc` runs the existing Node arRPC server in an Electron worker only when enabled. Do not reintroduce a standalone Bun runtime. RPC and process scanning default to off. `src/excord/efficiency.ts` adds the optional ExcordEfficiency plugin.
+
+The bundled runtime owns QuickCSS and theme watchers. Do not add a second set in the desktop wrapper. The Electron smoke test checks that one QuickCSS edit emits one update after repeated refreshes. Build scripts collect dependency license texts from the actual bundle input graph, and package checks require them in the release.
 
 `src/excord/ControlCenter.tsx` presents local plugins, metrics, and compatibility information inside Discord settings. Desktop settings below it retain the inherited hardware, tray, notification, theme, and window controls.
 

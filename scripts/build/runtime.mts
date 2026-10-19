@@ -2,6 +2,7 @@ import { build, type Plugin } from "esbuild";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { writeDependencyLicenses } from "./licenses.mts";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const vendor = join(root, "vendor/equicord");
@@ -82,7 +83,7 @@ const defines = {
     BUILD_TIMESTAMP: Number(process.env.SOURCE_DATE_EPOCH ?? 0) * 1000
 };
 const define = Object.fromEntries(Object.entries(defines).map(([key, value]) => [key, JSON.stringify(value)]));
-const common = { ...upstream.commonOpts, absWorkingDir: vendor, define, sourcemap: "external" as const, target: "es2022" };
+const common = { ...upstream.commonOpts, absWorkingDir: vendor, define, sourcemap: "external" as const, target: "es2022", metafile: true };
 
 const natives: Plugin = {
     name: "excord-upstream-natives",
@@ -110,10 +111,10 @@ const natives: Plugin = {
     }
 };
 
-await build({ ...common, entryPoints: ["src/main/index.ts"], outfile: join(out, "main.js"),
+const main = await build({ ...common, entryPoints: ["src/main/index.ts"], outfile: join(out, "main.js"),
     platform: "node", format: "cjs", external: ["electron", "original-fs", "/assets/*"],
     plugins: [nativeBridge, natives, ...upstream.commonOpts.plugins] });
-await build({ ...common, entryPoints: ["src/preload.ts"], outfile: join(out, "preload.js"),
+const preload = await build({ ...common, entryPoints: ["src/preload.ts"], outfile: join(out, "preload.js"),
     platform: "node", format: "cjs", external: ["electron", "electron/renderer", "original-fs", "/assets/*"] });
 const rendererOptions = { ...common, entryPoints: ["src/Vencord.ts"], outfile: join(out, "renderer.js"),
     format: "iife", globalName: "Vencord", metafile: true,
@@ -129,6 +130,7 @@ for (const path of Object.keys(baseline.metafile!.inputs)) {
     if (key.endsWith("/index")) modules[key.slice(0, -6)] = modules[key];
 }
 const renderer = await build(rendererOptions);
+await writeDependencyLicenses([main.metafile!, preload.metafile!, renderer.metafile!], vendor, join(out, "THIRD_PARTY_LICENSES.txt"));
 await writeFile(join(out, "modules.json"), JSON.stringify({ aliases: Object.keys(modules), nativeAliases: Object.keys(nativeModules), defines, revision: lock.equicord.commit }, null, 2));
 await writeFile(join(out, "bundle-report.json"), JSON.stringify({ revision: lock.equicord.commit,
     outputs: Object.fromEntries(Object.entries(renderer.metafile!.outputs).map(([path, value]) => [relative(vendor, path), { bytes: value.bytes }])) }, null, 2));
