@@ -33,6 +33,8 @@ jobs:
     timeout-minutes: 25
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      # Ad-hoc signing uses no certificate or signing secret, including on PRs.
+      CSC_FOR_PULL_REQUEST: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

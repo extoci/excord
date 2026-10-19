@@ -87,7 +87,10 @@ for (const platform of ["mac", "win"] as const) {
           architecture: platform === "mac" ? "arm64" : "x64",
           nativeVerification: `https://github.com/extoci/excord/actions/runs/${run}`,
           equicordRevision: lock.equicord.commit,
-          signing: "unsigned, macOS not notarized",
+          signing:
+            platform === "mac"
+              ? "ad-hoc signed; no Developer ID or notarization"
+              : "unsigned",
           updates: "manual closed alpha",
           verified: [
             "installer",

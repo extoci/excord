@@ -8,7 +8,7 @@ The targets are Apple silicon macOS 27 or later and Windows x64. Intel Macs and 
 
 Each alpha kit includes the original installer, matching source archive, a checksum file, this guide, and a test checklist. You can forward the kit directly to a friend. Running Excord does not require access to the private GitHub repository. Updates are shared manually; install the next build over the existing one to keep the profile. The installer finishes without automatically launching Excord.
 
-On Mac, open the DMG, drag the app to Applications, eject the DMG, and launch Excord from Applications. These builds are unsigned and unnotarized. After verifying the file and its origin, follow Apple's [instructions for opening an app from an unidentified developer](https://support.apple.com/en-us/102445) if macOS blocks the first launch. Do not disable Gatekeeper globally.
+On Mac, open the DMG, drag the app to Applications, eject the DMG, and launch Excord from Applications. The Mac build is ad-hoc signed to verify bundle integrity, but it has no Developer ID signature or notarization. After verifying the file and its origin, follow Apple's [instructions for opening an app from an unidentified developer](https://support.apple.com/en-us/102445) if macOS blocks the first launch. Do not disable Gatekeeper globally.
 
 On Windows, run `Excord-Setup-0.1.1-alpha.1-x64.exe` and install for your user. An unsigned build may show a Windows reputation prompt. Verify that you received this exact build and compare its SHA-256 with `SHA256SUMS`. A computer's application-control policy can block unsigned applications; this alpha does not bypass that policy. The portable ZIP is also available to the maintainer.
 

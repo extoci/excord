@@ -38,7 +38,7 @@ The smoke tests verify startup and plugin loading without an account. They do no
 
 ## Closed alpha
 
-`0.1.1-alpha.1` uses manual updates. It does not check the private feed on startup, and its update action explains how to obtain the next shared installer. No repository token belongs in a tester's app.
+`0.1.1-alpha.1` uses an ad-hoc Mac signature with certificate discovery disabled and verifies its bundle integrity using `codesign --verify --deep --strict`. This is not a Developer ID signature or notarization. Windows remains unsigned. The alpha uses manual updates. It does not check the private feed on startup, and its update action explains how to obtain the next shared installer. No repository token belongs in a tester's app.
 
 The workflow also runs installer checks on disposable native hosts. It installs, launches, relaunches, reinstalls the same artifact, and verifies synthetic-cookie persistence and normal shutdown. This is a reinstallation check, not proof of migration between every historical version. `scripts/install-smoke.mts` requires CI because installation writes OS registrations. Recovery integration checks use a profile path with spaces, malformed settings, a native plugin, safe mode, an offline request failure, and a diagnostics export.
 

@@ -29,6 +29,7 @@ await access(binary);
 // Keep the runtime and unpacked compiler in this total so ASAR savings cannot hide growth elsewhere.
 const appDirectory = resolve(dirname(archive), process.platform === "darwin" ? "../.." : "..");
 if (process.platform === "darwin") {
+    execFileSync("codesign", ["--verify", "--deep", "--strict", appDirectory]);
     const description = execFileSync("/usr/libexec/PlistBuddy", ["-c", "Print :NSAudioCaptureUsageDescription", join(appDirectory, "Contents/Info.plist")], { encoding: "utf8" });
     assert.match(description, /Excord/, "The Mac package must declare system audio capture access");
 }
