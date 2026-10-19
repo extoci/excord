@@ -79,15 +79,6 @@ export const enum IpcEvents {
     GET_PLATFORM_SPOOF_INFO = "VCD_GET_PLATFORM_SPOOF_INFO"
 }
 
-export const enum UpdaterIpcEvents {
-    GET_DATA = "VCD_UPDATER_GET_DATA",
-    INSTALL = "VCD_UPDATER_INSTALL",
-    DOWNLOAD_PROGRESS = "VCD_UPDATER_DOWNLOAD_PROGRESS",
-    ERROR = "VCD_UPDATER_ERROR",
-    SNOOZE_UPDATE = "VCD_UPDATER_SNOOZE_UPDATE",
-    IGNORE_UPDATE = "VCD_UPDATER_IGNORE_UPDATE"
-}
-
 export const enum IpcCommands {
     RPC_ACTIVITY = "rpc:activity",
     RPC_INVITE = "rpc:invite",

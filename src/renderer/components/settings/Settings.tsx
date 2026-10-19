@@ -17,7 +17,6 @@ import { AutoStartToggle } from "./AutoStartToggle";
 import { DeveloperOptionsButton } from "./DeveloperOptions";
 import { DiscordBranchPicker } from "./DiscordBranchPicker";
 import { NotificationBadgeToggle } from "./NotificationBadgeToggle";
-import { OutdatedVesktopWarning } from "./OutdatedVesktopWarning";
 import { Updater } from "./Updater";
 import { UserAssetsButton } from "./UserAssets";
 import { VesktopSettingsSwitch } from "./VesktopSettingsSwitch";
@@ -203,7 +202,6 @@ export default ErrorBoundary.wrap(
             <section>
                 <ControlCenter />
                 <Updater />
-                <OutdatedVesktopWarning />
                 <SettingsSections />
             </section>
         );

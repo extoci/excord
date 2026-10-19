@@ -61,7 +61,7 @@ export function createDiagnosticReport(
       },
     },
     events: events.map((event) => ({ kind: event.kind, code: event.code })),
-    updates: "manual closed alpha",
+    updates: "user-controlled GitHub releases",
     privacy:
       "No cookies, account identifiers, URLs, filesystem paths, settings contents, plugin source, or raw error messages are collected.",
   };

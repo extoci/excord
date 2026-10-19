@@ -4,6 +4,13 @@ import { ExcordChannels } from "./channels";
 import type { ExcordNativeApi, LocalPluginSnapshot, PerformanceSnapshot, PluginIssue } from "./types";
 
 const native: ExcordNativeApi = {
+    getUpdateState: () => ipcRenderer.invoke(ExcordChannels.updateSnapshot),
+    updateAction: action => ipcRenderer.invoke(ExcordChannels.updateAction, action),
+    onUpdateState: listener => {
+        const receive = (_event: Electron.IpcRendererEvent, state: import("./updates").UpdateSnapshot) => listener(state);
+        ipcRenderer.on(ExcordChannels.updateState, receive);
+        return () => { ipcRenderer.removeListener(ExcordChannels.updateState, receive); };
+    },
     openDeveloperPortal: () => ipcRenderer.invoke(ExcordChannels.openPortal),
     closeDeveloperPortal: () => ipcRenderer.invoke(ExcordChannels.closePortal),
     reloadDeveloperPortal: () => ipcRenderer.invoke(ExcordChannels.reloadPortal),

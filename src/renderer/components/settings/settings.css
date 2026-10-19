@@ -34,17 +34,17 @@
 }
 
 .vcd-settings-updater-card {
-    padding: 1em;
-    margin-bottom: 1em;
+    padding: 20px;
+    margin: 20px 0 28px;
     display: grid;
-    gap: 0.5em;
-
+    gap: 12px;
     border-radius: 8px;
-    background-color: var(--bg-secondary);
-    background: var(--background-feedback-warning);
-    border: 1px solid var(--info-warning-foreground);
-    color: var(--text-feedback-warning);
+    background: var(--background-secondary, var(--background-base-low));
+    color: var(--text-default);
 }
+.vcd-settings-update-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.vcd-settings-updater-card progress { width: 100%; accent-color: var(--brand-500); }
+.vcd-settings-update-notes { white-space: pre-wrap; overflow-wrap: anywhere; }
 
 /* arguments */
 

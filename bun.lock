@@ -5,6 +5,7 @@
     "": {
       "name": "excord",
       "dependencies": {
+        "builder-util-runtime": "9.7.0",
         "esbuild": "^0.28.2",
       },
       "devDependencies": {

@@ -2,7 +2,7 @@
 
 Excord uses GitHub Actions, GitHub Releases, and electron-updater. The desktop app and its pinned Equicord catalog ship together. There is no Excord-hosted catalog or update server.
 
-The repository is currently private. Keep it private until the user asks to publish it. GitHub requires repository access to download its artifacts and releases. A private repository's update feed is not available to unauthenticated desktop installations. Do not embed a GitHub token in the application.
+Distribution is intended to use public GitHub Releases. Until the owner makes the repository public, unauthenticated update checks cannot access it and fail quietly in Settings. Do not change repository visibility as part of packaging or embed a GitHub token in the app.
 
 ## Native build artifacts
 
@@ -38,8 +38,16 @@ The smoke tests verify startup and plugin loading without an account. They do no
 
 ## Closed alpha
 
-Closed alpha builds use an ad-hoc Mac signature with certificate discovery disabled and verifies its bundle integrity using `codesign --verify --deep --strict`. This is not a Developer ID signature or notarization. Windows remains unsigned. The alpha uses manual updates. It does not check the private feed on startup, and its update action explains how to obtain the next shared installer. No repository token belongs in a tester's app.
+Closed alpha builds use an ad-hoc Mac signature with certificate discovery disabled and verifies its bundle integrity using `codesign --verify --deep --strict`. This is not a Developer ID signature or notarization. Windows remains unsigned. The updater uses one release track. It never gates launch, opens a popup, downloads automatically, or installs without explicit consent. It checks one minute after Discord loads and once per day afterward; Check for updates bypasses that interval. Installation on quit is opt-in for the current running session and does not reopen the app. An explicit Restart and update does reopen it. Mac update installation still needs verification with the project's eventual distribution signature on real devices. No repository token belongs in the application.
 
 The workflow also runs installer checks on disposable native hosts. It installs, launches, relaunches, reinstalls the same artifact, and verifies synthetic-cookie persistence and normal shutdown. This is a reinstallation check, not proof of migration between every historical version. `scripts/install-smoke.mts` requires CI because installation writes OS registrations. Recovery integration checks use a profile path with spaces, malformed settings, a native plugin, safe mode, an offline request failure, and a diagnostics export.
 
-For each verified alpha source revision, prepare a Mac and Windows alpha kit. Include its unchanged installer, `closed-alpha.md`, `alpha-checklist.md`, `alpha-feedback.md`, matching source archive, and `SHA256SUMS`. The maintainer can download these from the private draft and forward the kits without granting repository access. The repository remains private. Do not invite testers, send messages, or change repository visibility as part of packaging.
+Kits are discontinued. Release assets are the Mac DMG and updater ZIP, Windows Setup and ZIP, blockmaps, latest-channel metadata, matching source, and SHA256SUMS.
+
+## Single update track
+
+The first version is `0.0.0-alpha1`, tagged `v0.0.0-alpha1`. The updater selects the newest published GitHub release carrying both Windows and Mac latest-channel metadata. Drafts and incomplete releases are ignored.
+
+The app resolves that release's immutable GitHub download directory and uses electron-updater's generic provider with `latest.yml` or `latest-mac.yml`. Packaging explicitly writes the latest channel even for prerelease version strings. Version comparison and package integrity remain electron-updater's responsibility; downgrades are disabled. Future versions must increase according to SemVer. Use numeric prerelease components for subsequent builds, such as `0.0.1-alpha.1`, to avoid lexical ordering of `alpha10` and `alpha2`.
+
+The release workflow adds the source archive and checksums only after native verification succeeds. Tag-triggered releases are published; manual workflow runs create drafts, which the updater ignores. Source and runtime updates ship together. Settings display errors and allow retries without affecting Discord. Installation state and consent are not persisted across crashes or launches.

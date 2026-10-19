@@ -1,6 +1,6 @@
 # Excord alpha checklist
 
-Build: 0.1.1-alpha.3
+Build: 0.0.0-alpha1
 Tester:
 Operating system and version:
 CPU architecture:
@@ -50,6 +50,14 @@ Mark each item pass, fail, or not tested. Record failures in alpha-feedback.md. 
 - [ ] The maintainer has passed installation, login persistence, text chat, a voice call, screen sharing, and safe-mode recovery on Mac.
 - [ ] The maintainer has passed those same checks on Windows.
 - [ ] Any failed or untested items are disclosed to the invited testers.
-- [ ] Each tester receives the guide, checklist, matching source archive, and checksum file with the installer.
+- [ ] Each tester can download the installer, guide, matching source, and checksums from Releases.
 
 Do not label unchecked items as verified. Keep the group small while account and hardware behavior is being established.
+
+## Updates
+
+- [ ] Opening Excord does not wait for an update check or open an updater window.
+- [ ] Updates appear only in Settings. An offline check fails there without interrupting Discord.
+- [ ] Download, cancel, and retry an update. Download completion does not restart the app.
+- [ ] Install when I quit can be armed and cancelled. Closing to the tray leaves the app running.
+- [ ] On a real update pair, verify installation on full quit without reopening, and explicit restart with reopening. Verify login and plugin folders survive.

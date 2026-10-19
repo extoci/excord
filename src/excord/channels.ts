@@ -1,4 +1,7 @@
 export const ExcordChannels = {
+    updateSnapshot: "excord:update-snapshot",
+    updateAction: "excord:update-action",
+    updateState: "excord:update-state",
     openPortal: "excord:open-portal",
     closePortal: "excord:close-portal",
     reloadPortal: "excord:reload-portal",

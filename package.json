@@ -1,7 +1,7 @@
 {
   "name": "excord",
   "desktopName": "excord",
-  "version": "0.1.1-alpha.3",
+  "version": "0.0.0-alpha1",
   "private": true,
   "description": "An opinionated Discord desktop client with refreshable TypeScript plugins",
   "keywords": [],
@@ -36,6 +36,7 @@
     "check:package": "node --import tsx scripts/assert-package.mts"
   },
   "dependencies": {
+    "builder-util-runtime": "9.7.0",
     "esbuild": "^0.28.2"
   },
   "optionalDependencies": {
@@ -237,11 +238,14 @@
         }
       ]
     },
+    "detectUpdateChannel": false,
+    "generateUpdatesFilesForAllChannels": false,
     "publish": {
       "provider": "github",
       "owner": "extoci",
       "repo": "excord",
-      "releaseType": "release"
+      "releaseType": "prerelease",
+      "channel": "latest"
     },
     "rpm": {
       "fpm": [

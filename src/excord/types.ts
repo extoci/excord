@@ -36,6 +36,9 @@ export interface RuntimeModuleManifest {
 }
 
 export interface ExcordNativeApi {
+    getUpdateState(): Promise<import("./updates").UpdateSnapshot>;
+    updateAction(action: import("./updates").UpdateAction): Promise<void>;
+    onUpdateState(listener: (state: import("./updates").UpdateSnapshot) => void): () => void;
     openDeveloperPortal(): Promise<void>;
     closeDeveloperPortal(): Promise<void>;
     reloadDeveloperPortal(): Promise<void>;

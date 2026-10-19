@@ -4,99 +4,75 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { app, BrowserWindow, dialog, ipcMain } from "electron";
-import { autoUpdater, UpdateInfo } from "electron-updater";
-import { join } from "path";
-import { IpcEvents, UpdaterIpcEvents } from "shared/IpcEvents";
-import { STATIC_DIR } from "shared/paths";
-import { Millis } from "shared/utils/millis";
+import { CancellationToken } from "builder-util-runtime";
+import { app, BrowserWindow, net } from "electron";
+import { autoUpdater } from "electron-updater";
+import { IpcEvents } from "shared/IpcEvents";
 
+import { ExcordChannels } from "../excord/channels";
+import { isDiscordOrigin } from "../excord/origin";
+import { resolveUpdateFeed } from "../excord/updateFeed";
+import { UpdateController } from "../excord/updates";
+import { AppEvents } from "./events";
 import { State } from "./settings";
 import { handle } from "./utils/ipcWrappers";
-import { makeLinksOpenExternally } from "./utils/makeLinksOpenExternally";
-import { loadView } from "./vesktopStatic";
 
-let updaterWindow: BrowserWindow | null = null;
-
-autoUpdater.on("update-available", update => {
-    if (State.store.updater?.ignoredVersion === update.version) return;
-    if ((State.store.updater?.snoozeUntil ?? 0) > Date.now()) return;
-
-    openUpdater(update);
-});
-
-autoUpdater.on("update-downloaded", () => setTimeout(() => autoUpdater.quitAndInstall(), 100));
-autoUpdater.on("download-progress", p =>
-    updaterWindow?.webContents.send(UpdaterIpcEvents.DOWNLOAD_PROGRESS, p.percent)
-);
-autoUpdater.on("error", err => updaterWindow?.webContents.send(UpdaterIpcEvents.ERROR, err.message));
-
+// Consent is owned by UpdateController, including after a cached download is reused.
 autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = false;
-autoUpdater.fullChangelog = true;
-
-// Development builds have no update feed. A release configures its own GitHub repository.
-const manualAlphaUpdates = app.getVersion().includes("-alpha.");
-const isOutdated = app.isPackaged && !manualAlphaUpdates ? autoUpdater.checkForUpdates().then(res => Boolean(res?.isUpdateAvailable)).catch(error => {
-    console.warn("[Excord] Update check failed:", error.message);
-    return false;
-}) : Promise.resolve(false);
-
-handle(IpcEvents.UPDATER_IS_OUTDATED, () => isOutdated);
-handle(IpcEvents.UPDATER_OPEN, async () => {
-    if (manualAlphaUpdates) {
-        await dialog.showMessageBox({ type: "info", title: "Excord closed alpha", message: "Alpha updates are shared manually.",
-            detail: "Get the next build from the person who shared Excord with you. Install it over this version to keep your profile. The private GitHub feed is not an automatic update service for alpha testers." });
-        return;
+autoUpdater.allowPrerelease = true;
+autoUpdater.allowDowngrade = false;
+autoUpdater.fullChangelog = false;
+let cancellation: CancellationToken | undefined;
+export const updates = new UpdateController({
+    async check() {
+        const url = await resolveUpdateFeed(net.fetch.bind(net) as typeof fetch);
+        autoUpdater.setFeedURL({ provider: "generic", url, channel: "latest" });
+        const result = await autoUpdater.checkForUpdates();
+        if (!result?.isUpdateAvailable) return;
+        const info = result.updateInfo;
+        return { version: info.version, notes: typeof info.releaseNotes === "string" ? info.releaseNotes.slice(0, 16000) : undefined };
+    },
+    async download() {
+        cancellation = new CancellationToken();
+        try { await autoUpdater.downloadUpdate(cancellation); } finally { cancellation = undefined; }
+    },
+    cancel() { cancellation?.cancel(); },
+    install(relaunch) {
+        autoUpdater.autoRunAppAfterInstall = relaunch;
+        autoUpdater.quitAndInstall(true, relaunch);
     }
-    try {
-        const res = await autoUpdater.checkForUpdates();
-        if (res?.isUpdateAvailable && res.updateInfo) openUpdater(res.updateInfo);
-    } catch {
-        await dialog.showMessageBox({ type: "info", title: "Excord updates", message: "The update feed could not be reached.",
-            detail: "Check your connection or ask the person who shared this build for a newer installer." });
+}, app.getVersion(), app.isPackaged && ["win32", "darwin"].includes(process.platform), state => {
+    for (const win of BrowserWindow.getAllWindows()) {
+        if (!win.isDestroyed() && !win.webContents.isDestroyed() && isDiscordOrigin(win.webContents.getURL()))
+            win.webContents.send(ExcordChannels.updateState, state);
     }
+}, State.store.updater?.lastCheckedAt, time => {
+    State.store.updater ??= {};
+    State.store.updater.lastCheckedAt = time;
 });
+autoUpdater.on("download-progress", progress => updates.progress(progress.percent));
+// Check/download errors reject their operation promises. Install errors arrive as events.
+autoUpdater.on("error", () => updates.installFailed());
 
-function openUpdater(update: UpdateInfo) {
-    updaterWindow = new BrowserWindow({
-        title: "Excord Updater",
-        autoHideMenuBar: true,
-        ...(process.platform === "win32"
-            ? { icon: join(STATIC_DIR, "icon.ico") }
-            : process.platform === "linux"
-              ? { icon: join(STATIC_DIR, "icon.png") }
-              : {}),
-        webPreferences: {
-            preload: join(__dirname, "updaterPreload.js")
-        },
-        minHeight: 400,
-        minWidth: 750
-    });
-    makeLinksOpenExternally(updaterWindow);
-
-    handle(UpdaterIpcEvents.GET_DATA, () => ({ update, version: app.getVersion() }));
-    handle(UpdaterIpcEvents.INSTALL, async () => {
-        await autoUpdater.downloadUpdate();
-    });
-    handle(UpdaterIpcEvents.SNOOZE_UPDATE, () => {
-        State.store.updater ??= {};
-        State.store.updater.snoozeUntil = Date.now() + 1 * Millis.DAY;
-        updaterWindow?.close();
-    });
-    handle(UpdaterIpcEvents.IGNORE_UPDATE, () => {
-        State.store.updater ??= {};
-        State.store.updater.ignoredVersion = update.version;
-        updaterWindow?.close();
-    });
-
-    updaterWindow.on("closed", () => {
-        ipcMain.removeHandler(UpdaterIpcEvents.GET_DATA);
-        ipcMain.removeHandler(UpdaterIpcEvents.INSTALL);
-        ipcMain.removeHandler(UpdaterIpcEvents.SNOOZE_UPDATE);
-        ipcMain.removeHandler(UpdaterIpcEvents.IGNORE_UPDATE);
-        updaterWindow = null;
-    });
-
-    loadView(updaterWindow, "updater/index.html");
-}
+let timer: ReturnType<typeof setTimeout> | undefined;
+AppEvents.once("appLoaded", () => {
+    const check = () => {
+        void updates.check(true);
+        timer = setTimeout(check, 24 * 60 * 60 * 1000);
+        timer.unref();
+    };
+    timer = setTimeout(check, 60000);
+    timer.unref();
+});
+app.on("will-quit", event => {
+    if (updates.snapshot().phase === "ready" && updates.snapshot().installOnQuit) {
+        event.preventDefault();
+        updates.install(false);
+    } else if (timer) clearTimeout(timer);
+});
+// Retained desktop API opens Settings, never a popup or a warning badge.
+handle(IpcEvents.UPDATER_IS_OUTDATED, () => false);
+handle(IpcEvents.UPDATER_OPEN, async event => {
+    await event.sender.executeJavaScript('Vencord.Webpack.Common.SettingsRouter.openUserSettings("ExcordSettings")');
+});

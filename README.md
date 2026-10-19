@@ -20,7 +20,7 @@ Everything below here was written by agents.
 
 The current alpha targets Apple silicon Macs running macOS 27+ and Windows x64.
 
-On Mac, open the DMG and drag Excord into Applications. On Windows, run the Setup executable. Updates are manual for now. Install the next version over the existing one to keep your login, settings, and plugins.
+On Mac, open the DMG and drag Excord into Applications. On Windows, run the Setup executable. Updates live in Excord Settings. Checks happen quietly after launch; downloading and installation require your permission. You can install when you quit or explicitly restart to update.
 
 The [alpha guide](docs/closed-alpha.md) covers installation and recovery. There's also a [device checklist](docs/alpha-checklist.md) for testing calls, screen sharing, and the other things you probably expect a Discord client to do.
 

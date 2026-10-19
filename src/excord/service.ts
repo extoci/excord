@@ -165,3 +165,14 @@ for (const [channel, action] of [
     const { developerPortal } = await import("../main/developerPortal");
     developerPortal(currentWindow)[action]();
 });
+
+for (const channel of [ExcordChannels.updateSnapshot, ExcordChannels.updateAction]) ipcMain.handle(channel, async (event, action: unknown) => {
+    assertSender(event.senderFrame);
+    if (!currentWindow || currentWindow.isDestroyed() || event.sender !== currentWindow.webContents)
+        throw new Error("Updates require the main Excord window.");
+    const { updates } = await import("../main/updater");
+    if (channel === ExcordChannels.updateSnapshot) return updates.snapshot();
+    if (typeof action !== "string" || !["check", "download", "cancel", "install-on-quit", "keep-current", "restart"].includes(action))
+        throw new Error("Unknown update action");
+    await updates.action(action as import("./updates").UpdateAction);
+});

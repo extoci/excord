@@ -1,18 +1,20 @@
 # Excord closed alpha
 
-This is a small Mac and Windows test of Excord 0.1.1-alpha.3. It wraps Discord's website and bundles Equicord plus personal TypeScript plugin folders. The Rust/CEF rewrite is on hold.
+This is a small Mac and Windows test of Excord 0.0.0-alpha1. It wraps Discord's website and bundles Equicord plus personal TypeScript plugin folders. The Rust/CEF rewrite is on hold.
 
 ## Install
 
 The targets are Apple silicon macOS 27 or later and Windows x64. Intel Macs and Windows ARM are outside this alpha. Discord needs an internet connection.
 
-Each alpha kit includes the original installer, matching source archive, a checksum file, this guide, and a test checklist. You can forward the kit directly to a friend. Running Excord does not require access to the private GitHub repository. Updates are shared manually; install the next build over the existing one to keep the profile. The installer finishes without automatically launching Excord.
+Download the DMG on Mac or the Setup executable on Windows from GitHub Releases. Kits are discontinued. The release also includes updater archives, matching source, and SHA-256 checksums.
+
+Updates appear in Excord Settings. Excord checks quietly one minute after Discord loads and at most once a day automatically. Click Download update to prepare it. Then choose Install when I quit or Restart and update. A normal launch never waits for the updater; a failed check or download leaves the running version alone. Closing to the tray does not install an update. You can still install a downloaded DMG or Setup manually over the existing application.
 
 On Mac, open the DMG, drag the app to Applications, eject the DMG, and launch Excord from Applications. The Mac build is ad-hoc signed to verify bundle integrity, but it has no Developer ID signature or notarization. After verifying the file and its origin, follow Apple's [instructions for opening an app from an unidentified developer](https://support.apple.com/en-us/102445) if macOS blocks the first launch. Do not disable Gatekeeper globally.
 
-On Windows, run `Excord-Setup-0.1.1-alpha.3-x64.exe` and install for your user. An unsigned build may show a Windows reputation prompt. Verify that you received this exact build and compare its SHA-256 with `SHA256SUMS`. A computer's application-control policy can block unsigned applications; this alpha does not bypass that policy. The portable ZIP is also available to the maintainer.
+On Windows, run `Excord-Setup-0.0.0-alpha1-x64.exe` and install for your user. An unsigned build may show a Windows reputation prompt. Verify that you received this exact build and compare its SHA-256 with `SHA256SUMS`. A computer's application-control policy can block unsigned applications; this alpha does not bypass that policy. The portable ZIP is also available to the maintainer.
 
-To check the kit's files on Mac, run `shasum -a 256 -c SHA256SUMS` in the extracted kit folder. On Windows, run `Get-FileHash .\Excord-Setup-0.1.1-alpha.3-x64.exe -Algorithm SHA256` in PowerShell and compare the result with the matching line in `SHA256SUMS`.
+Compare the installer hash with SHA256SUMS from the release. On Mac use `shasum -a 256 <installer.dmg>`; on Windows use `Get-FileHash .\Excord-Setup-0.0.0-alpha1-x64.exe -Algorithm SHA256`.
 
 ## First session
 

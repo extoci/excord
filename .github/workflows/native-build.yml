@@ -55,6 +55,8 @@ jobs:
         run: bun run test:rpc
       - name: Build installer and archive
         run: bun x electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --publish never
+      - name: Verify single-track updater metadata
+        run: node --import tsx scripts/check-update-metadata.mts
       - name: Exercise the packaged application archive
         run: bun run check:package
       - uses: actions/upload-artifact@v4

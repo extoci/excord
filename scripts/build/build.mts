@@ -114,12 +114,6 @@ await Promise.all([
     }),
     createContext({
         ...NodeCommonOpts,
-        entryPoints: ["src/preload/updater.ts"],
-        outfile: "dist/js/updaterPreload.js",
-        footer: { js: "//# sourceURL=VesktopUpdaterPreload" }
-    }),
-    createContext({
-        ...NodeCommonOpts,
         entryPoints: ["src/preload/arrpcSettings.ts"],
         outfile: "dist/js/arrpcSettingsPreload.js",
         footer: { js: "//# sourceURL=VesktopArRPCSettingsPreload" }

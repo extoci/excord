@@ -83,6 +83,7 @@ export interface State {
     lastElectronVersion?: string;
 
     updater?: {
+        lastCheckedAt?: number;
         ignoredVersion?: string;
         snoozeUntil?: number;
     };
