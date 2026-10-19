@@ -217,6 +217,7 @@
     },
     "win": {
       "icon": "build/icon.ico",
+      "compression": "normal",
       "target": [
         {
           "target": "nsis",

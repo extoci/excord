@@ -18,7 +18,7 @@ CI artifacts stay private with the repository. Verification artifacts include th
 
 Release packages exclude generated source maps and the renderer's build report. The matching JavaScript, CSS, and maps remain in a separate `debug-symbols-*` CI artifact for 14 days. Development builds still link their source maps. Local plugins keep their own inline maps so plugin authors retain useful error locations.
 
-Installers and archives use maximum compression. This changes packaging time and download size, not the code Electron executes. Chromium ships only its `en-US` language resources. Discord's website can still use other interface languages, but Chromium menus and messages fall back to English. This does not remove spell-check dictionaries, which Electron manages separately.
+Mac artifacts use maximum compression. Windows uses normal compression because maximum ZIP compression pushed its packaging step past 16 minutes on the native runner. Compression changes packaging time and download size, not the code Electron executes. Chromium ships only its `en-US` language resources. Discord's website can still use other interface languages, but Chromium menus and messages fall back to English. This does not remove spell-check dictionaries, which Electron manages separately.
 
 `bun run check:package` rejects accidentally bundled maps and reports ASAR bytes, compiler bytes, total installed regular-file bytes, the largest files, locale files, and installer/archive sizes in `test-results/package.json`. Installed bytes exclude symlinks and filesystem allocation overhead. Keep graphics fallbacks, plugin definitions, the local compiler, and license notices in the release.
 
