@@ -3,7 +3,7 @@
   "desktopName": "excord",
   "version": "0.1.1-alpha.2",
   "private": true,
-  "description": "An opinionated Discord desktop client with refreshable TypeScript plugins",
+  "description": "A performant, opinionated and extensible client inspired by Legcord, built on top of Equibop, Equicord, Vesktop and Vencord",
   "keywords": [],
   "license": "GPL-3.0-or-later",
   "author": "Excord contributors",

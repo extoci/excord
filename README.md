@@ -1,5 +1,7 @@
 # Excord
 
+A performant, opinionated and extensible client inspired by [Legcord](https://github.com/Legcord/Legcord), built on top of [Equibop](https://github.com/Equicord/Equibop), [Equicord](https://github.com/Equicord/Equicord), [Vesktop](https://github.com/Vencord/Vesktop) and [Vencord](https://github.com/Vendicated/Vencord).
+
 Excord wraps Discord's website in an opinionated desktop app. The first version targets Apple silicon Macs and Windows x64. It bundles Equicord's plugin catalog and adds local TypeScript plugin folders that rebuild when you refresh.
 
 This is an early implementation. It retains Equicord's plugin manager and Webpack patcher for compatibility, and derives its desktop integration from Equibop and Vesktop. It is not a completed rewrite of those projects. See `upstream.lock.json` for the exact source revisions.
