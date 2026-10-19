@@ -252,15 +252,13 @@ try {
     "[recovery] Offline page retried successfully without exposing native APIs",
   );
   const reportPath = join(profile, "diagnostics.json");
-  await normal.evaluate(({ dialog, Menu, BrowserWindow }, path) => {
+  await normal.evaluate(({ dialog, Menu }, path) => {
     dialog.showSaveDialog = async () => ({ canceled: false, filePath: path });
-    const item = Menu.getApplicationMenu()!.getMenuItemById(
-      "excord-export-diagnostics",
-    )!;
-    item.click(item, BrowserWindow.getAllWindows()[0], {} as KeyboardEvent);
+    if (!Menu.getApplicationMenu()?.getMenuItemById("excord-export-diagnostics"))
+      throw Error("Missing diagnostics export menu");
   }, reportPath);
-  for (let attempt = 0; attempt < 50 && !existsSync(reportPath); attempt++)
-    await delay(100);
+  // File creation precedes write completion. Await the IPC operation before reading.
+  assert.equal(await page.evaluate(() => ExcordNative.exportDiagnostics()), true);
   const report = await readFile(reportPath, "utf8");
   assert.equal(JSON.parse(report).schemaVersion, 1);
   assert.ok(
