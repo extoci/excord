@@ -22,7 +22,7 @@ import "./settings";
 
 import { debounce } from "@shared/debounce";
 import { IpcEvents } from "@shared/IpcEvents";
-import { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell, systemPreferences } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell, systemPreferences, type WebContents } from "electron";
 import monacoHtml from "file://monacoWin.html?minify&base64";
 import { FSWatcher, mkdirSync, readFileSync, watch, writeFileSync } from "fs";
 import { open, readdir, readFile, unlink } from "fs/promises";
@@ -112,20 +112,31 @@ ipcMain.handle(IpcEvents.OPEN_THEMES_FOLDER, () => shell.openPath(THEMES_DIR));
 ipcMain.handle(IpcEvents.OPEN_SETTINGS_FOLDER, () => shell.openPath(SETTINGS_DIR));
 
 let disposeFileWatchers: (() => void) | undefined;
+const cssSubscribers = new Set<WebContents>();
+function broadcastCss(channel: IpcEvents, css?: string) {
+    for (const subscriber of cssSubscribers) {
+        if (!subscriber.isDestroyed()) subscriber.postMessage(channel, css);
+    }
+}
 app.on("will-quit", () => disposeFileWatchers?.());
 
 ipcMain.handle(IpcEvents.INIT_FILE_WATCHERS, ({ sender }) => {
+    if (!cssSubscribers.has(sender)) {
+        cssSubscribers.add(sender);
+        sender.once("destroyed", () => {
+            cssSubscribers.delete(sender);
+            if (!cssSubscribers.size) disposeFileWatchers?.();
+        });
+    }
     disposeFileWatchers?.();
     const watchers: FSWatcher[] = [];
     let stopped = false;
     const dispose = () => {
         stopped = true;
         watchers.splice(0).forEach(watcher => watcher.close());
-        sender.removeListener("destroyed", dispose);
         if (disposeFileWatchers === dispose) disposeFileWatchers = undefined;
     };
     disposeFileWatchers = dispose;
-    sender.once("destroyed", dispose);
 
     open(QUICK_CSS_PATH, "a+").then(async fd => {
         await fd.close();
@@ -133,18 +144,18 @@ ipcMain.handle(IpcEvents.INIT_FILE_WATCHERS, ({ sender }) => {
         if (stopped) return;
         watchers.push(watch(QUICK_CSS_PATH, { persistent: false }, debounce(async () => {
             const css = await readCss();
-            if (!stopped && !sender.isDestroyed()) sender.postMessage(IpcEvents.QUICK_CSS_UPDATE, css);
+            if (!stopped) broadcastCss(IpcEvents.QUICK_CSS_UPDATE, css);
         }, 50)));
     }).catch(() => { });
 
     watchers.push(watch(THEMES_DIR, { persistent: false }, debounce(() => {
-        if (!stopped && !sender.isDestroyed()) sender.postMessage(IpcEvents.THEME_UPDATE, void 0);
+        if (!stopped) broadcastCss(IpcEvents.THEME_UPDATE);
     })));
 
     if (IS_DEV) {
         watchers.push(watch(RENDERER_CSS_PATH, { persistent: false }, async () => {
             const css = await readFile(RENDERER_CSS_PATH, "utf-8");
-            if (!stopped && !sender.isDestroyed()) sender.postMessage(IpcEvents.RENDERER_CSS_UPDATE, css);
+            if (!stopped) broadcastCss(IpcEvents.RENDERER_CSS_UPDATE, css);
         }));
     }
 });

@@ -114,6 +114,31 @@ try {
     }));
     assert.equal(cssNotifications, 1, "Refreshing must replace QuickCSS watchers instead of accumulating them");
     console.log("[smoke] QuickCSS emitted one update after repeated refreshes");
+    const auxiliaryWindow = application.waitForEvent("window");
+    const auxiliaryId = await application.evaluate(({ app, BrowserWindow }) => {
+        const window = new BrowserWindow({ show: false, webPreferences: {
+            preload: process.getBuiltinModule("path").join(app.getAppPath(), "static", "runtime", "preload.js"),
+            sandbox: false, contextIsolation: true, backgroundThrottling: false
+        } });
+        void window.loadURL("https://discord.com/login");
+        return window.id;
+    });
+    const auxiliary = await auxiliaryWindow;
+    await auxiliary.waitForURL("https://discord.com/login", { waitUntil: "domcontentloaded", timeout: 30000 });
+    await auxiliary.waitForFunction(() => typeof VencordNative !== "undefined", undefined, { timeout: 30000 });
+    for (const window of [page, auxiliary]) await window.evaluate(() => {
+        (globalThis as Record<string, unknown>).__excordCssUpdates = 0;
+        VencordNative.quickCss.addChangeListener(() => {
+            (globalThis as Record<string, number>).__excordCssUpdates++;
+        });
+    });
+    await page.evaluate(() => VencordNative.quickCss.set("/* Excord multiple-window probe */"));
+    for (const window of [page, auxiliary]) await window.waitForFunction(() =>
+        (globalThis as Record<string, unknown>).__excordCssUpdates === 1, undefined, { timeout: 5000 });
+    await application.evaluate(({ BrowserWindow }, id) => BrowserWindow.fromId(id)?.destroy(), auxiliaryId);
+    await page.evaluate(() => VencordNative.quickCss.set("/* Excord remaining-window probe */"));
+    await page.waitForFunction(() => (globalThis as Record<string, unknown>).__excordCssUpdates === 2, undefined, { timeout: 5000 });
+    console.log("[smoke] CSS updates reach both windows and survive closing one");
     const diagnostics = await page.evaluate(() => ExcordNative.diagnostics());
     await mkdir("test-results", { recursive: true });
     await page.screenshot({ path: "test-results/electron-login.png" });
