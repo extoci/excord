@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
@@ -38,7 +39,10 @@ const variants = [
   ...(values.baseline
     ? [{ label: "baseline", app: resolve(values.baseline) }]
     : []),
-  { label: "candidate", app: resolve(values.app!) },
+  {
+    label: values.client === "excord" ? "candidate" : values.client!,
+    app: values.packaged ? executablePath : resolve(values.app!),
+  },
 ];
 const results: Record<string, unknown>[] = [];
 let current: ElectronApplication | undefined;
@@ -69,7 +73,7 @@ function cpu(
   const previous = new Map(before.map((p) => [p.pid, p.cpu]));
   return (
     (after.reduce(
-      (total, p) => total + Math.max(0, p.cpu - (previous.get(p.pid) ?? p.cpu)),
+      (total, p) => total + Math.max(0, p.cpu - (previous.get(p.pid) ?? 0)),
       0,
     ) /
       (milliseconds / 1000)) *
@@ -150,14 +154,12 @@ try {
         timeout: 60000,
       }));
       if (values.corpus && round === 0)
-        await application
-          .context()
-          .addInitScript({
-            content: await readFile(
-              new URL("./fixtures/capture-patches.js", import.meta.url),
-              "utf8",
-            ),
-          });
+        await application.context().addInitScript({
+          content: await readFile(
+            new URL("./fixtures/capture-patches.js", import.meta.url),
+            "utf8",
+          ),
+        });
       let page = await application.firstWindow({ timeout: 60000 });
       const windowMs = performance.now() - started;
       const discordDeadline = Date.now() + 90000;
@@ -315,6 +317,13 @@ try {
           softwareRendering: process.platform === "linux",
           instrumented: values.profile,
           freshProfilePerRun: true,
+          client: values.client,
+          executable: executablePath,
+          settingsSha256: values.settings
+            ? createHash("sha256")
+                .update(await readFile(values.settings))
+                .digest("hex")
+            : undefined,
           sampleMs,
         },
         variants,

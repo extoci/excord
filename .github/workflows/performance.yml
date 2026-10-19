@@ -5,7 +5,7 @@ on:
     inputs:
       baseline:
         description: Excord source revision to compare on the same runner
-        default: "52d3d08"
+        default: "52d3d08c845eadd5b828340b57e7bfaafeb44ee5"
         required: true
         type: string
 
@@ -49,9 +49,12 @@ jobs:
         working-directory: candidate
       - run: bun run build
         working-directory: candidate
+      - name: Capture the initial patch set separately from timing trials
+        working-directory: candidate
+        run: node --import tsx scripts/bench-runtime.mts --app . --rounds 1 --seconds 1 --output test-results/corpus-run.json --corpus test-results/patch-corpus.json
       - name: Compare five alternating pairs on one native host
         working-directory: candidate
-        run: node --import tsx scripts/bench-runtime.mts --baseline ../baseline --app . --rounds 5 --seconds 5 --output test-results/performance.json --corpus test-results/patch-corpus.json
+        run: node --import tsx scripts/bench-runtime.mts --baseline ../baseline --app . --rounds 5 --seconds 5 --output test-results/performance.json
       - name: Compare the actual patcher against captured module text
         working-directory: candidate
         run: node --import tsx scripts/bench-patcher.mts test-results/patch-corpus.json test-results/patcher-performance.json

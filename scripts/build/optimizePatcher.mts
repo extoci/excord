@@ -11,6 +11,7 @@ function replaceOnce(source: string, before: string, after: string) {
 
 /** Keep the pinned vendor tree intact and make the exact modification reviewable. */
 export function optimizePatcher(source: string, prefilter: string): string {
+  source = source.replace(/\r\n/g, "\n");
   source = replaceOnce(
     source,
     "export const patches = [] as Patch[];",

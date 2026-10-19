@@ -86,6 +86,16 @@ interface Harness {
 }
 let original: Harness;
 let optimized: Harness;
+test("the checked patcher transformation accepts a Windows checkout", async () => {
+  const source = await readFile(
+    "vendor/equicord/src/webpack/patchWebpack.ts",
+    "utf8",
+  );
+  const unix = source.replace(/\r\n/g, "\n");
+  expect(optimizePatcher(unix.replace(/\n/g, "\r\n"), "prefilter")).toBe(
+    optimizePatcher(unix, "prefilter"),
+  );
+});
 beforeAll(async () => {
   const source = await readFile(
     "vendor/equicord/src/webpack/patchWebpack.ts",
