@@ -10,7 +10,7 @@ Excord replaces Equibop's standalone Bun RPC executable with the Node arRPC serv
 
 Excord excludes Equicord's NewPluginsManager from the runtime registry. New-plugin and new-setting announcement popups never register, including when an existing profile saved the plugin as enabled. The manual plugin catalog remains available in Settings.
 
-Excord adds the optional HtmlVisualizations plugin, disabled by default. It renders HTML code blocks and Discord HTML attachments in script-enabled, opaque-origin frames, with MessageLogger-style ID allowlists and a bot-only switch. Prepared HTML exported from T3 Code uses the same theme and resize protocol. See [HTML visualizations](html-visualizations.md) for the input formats, rendering limits, and T3 bridge boundary.
+Excord adds the optional ExcordVisualizations plugin, disabled by default. It renders HTML code blocks and Discord HTML attachments in script-enabled, opaque-origin frames, with MessageLogger-style ID allowlists and a bot-only switch. Prepared HTML exported from T3 Code uses the same theme and resize protocol. See [ExcordVisualizations](html-visualizations.md) for the input formats, rendering limits, and T3 bridge boundary.
 
 ## Local plugin loading
 
