@@ -2,6 +2,7 @@ import modules from "~excord-modules";
 
 import type { PluginIssue } from "./types";
 import { createEfficiencyPlugin } from "./efficiency";
+import { createExcordVisualizationsPlugin } from "./visualizations";
 import { installRealtimeGuard } from "./realtime";
 
 interface PluginDefinition {
@@ -35,6 +36,8 @@ export function installExcordPlugins() {
     registry.PluginMeta.ExcordDeveloperPortal = { folderName: "excord/developerPortal", userPlugin: false };
     registry.default.ExcordEfficiency = createEfficiencyPlugin(modules);
     registry.PluginMeta.ExcordEfficiency = { folderName: "excord/efficiency", userPlugin: false };
+    registry.default.ExcordVisualizations = createExcordVisualizationsPlugin(modules);
+    registry.PluginMeta.ExcordVisualizations = { folderName: "excord/visualizations", userPlugin: false };
     const issues: PluginIssue[] = [];
     for (const plugin of ExcordNative.getLocalPlugins().plugins) {
         try {
