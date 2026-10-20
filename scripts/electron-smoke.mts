@@ -70,6 +70,9 @@ try {
         hasPatch: Vencord.WebpackPatcher.patches.some((patch: { plugin: string }) => patch.plugin === "ExcordRefreshProbe")
     }));
     assert.equal(initial.native, "object");
+    assert.equal(await page.evaluate(() => Vencord.Plugins.isPluginEnabled("HtmlVisualizations")), false,
+        "HTML visualizations must be opt-in on fresh profiles");
+    assert.equal(await page.evaluate(() => Vencord.Plugins.plugins.HtmlVisualizations.enabledByDefault), false);
     assert.equal(await page.evaluate(() => Object.hasOwn(Vencord.Plugins.plugins, "NewPluginsManager")), false,
         "Excord must never register plugin announcements");
     assert.equal(initial.experimentsEnabled, true, "Fresh profiles must enable Experiments");
