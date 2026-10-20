@@ -1,7 +1,7 @@
 {
   "name": "excord",
   "desktopName": "excord",
-  "version": "0.0.0-alpha2",
+  "version": "0.0.0-alpha3",
   "private": true,
   "description": "An opinionated Discord desktop client with refreshable TypeScript plugins",
   "keywords": [],
