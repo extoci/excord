@@ -96,7 +96,7 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
     async function openFavorites() {
         if (!repository.ready) return;
         const request = ++opening;
-        const accountId = repository.accountId;
+        const { accountId } = repository;
         try {
             if (!NativeCategory && !await requireGuildSidebar()) throw new Error("Could not load Discord's category component");
             if (!NativeCategory) throw new Error("Discord's category component was not found");
@@ -152,7 +152,7 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
     }
     function promptCategory(category?: FavoriteCategory) {
         const { React } = common;
-        const accountId = repository.accountId;
+        const { accountId } = repository;
         void common.openModalLazy(async () => {
             if (!await requireSettingsModal()) throw new Error("Could not load Discord's category dialog");
             return props => running && repository.ready && accountId === repository.accountId
@@ -183,7 +183,7 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
     function useReorder(kind: "channel" | "category", id: string, categoryId: string) {
         const { React, useDrag, useDrop } = common;
         const ref = React.useRef<HTMLLIElement>(null);
-        const accountId = repository.accountId;
+        const { accountId } = repository;
         const [, drag] = useDrag(() => ({ type: `EXCORD_FAVORITE_${kind}`, item: { id, kind, accountId } }), [id, kind, accountId]);
         const [{ over }, drop] = useDrop(() => ({
             accept: ["EXCORD_FAVORITE_channel", "EXCORD_FAVORITE_category"],
@@ -277,7 +277,7 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
     }
 
     const railClick = (event: Event) => {
-        const target = event.target;
+        const { target } = event;
         if (target instanceof Element && !target.closest("[data-excord-favorites]")
             && target.closest('[data-guilds-bar-home], [data-list-item-id^="guildsnav___"]')) setActive(false);
     };
