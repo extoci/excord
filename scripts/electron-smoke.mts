@@ -70,6 +70,14 @@ try {
         hasPatch: Vencord.WebpackPatcher.patches.some((patch: { plugin: string }) => patch.plugin === "ExcordRefreshProbe")
     }));
     assert.equal(initial.native, "object");
+    assert.equal(await page.evaluate(() => {
+        const plugin = Vencord.Plugins.plugins.ExcordFavorites;
+        return !!plugin && plugin.enabledByDefault === true
+            && typeof plugin.renderSidebar === "function"
+            && plugin.dependencies?.includes("ServerListAPI");
+    }), true, "Favorites must register with the native sidebar integration and ServerListAPI dependency");
+    assert.equal(await page.evaluate(() => Object.hasOwn(Vencord.Plugins.plugins, "ExcordVisualizations")), true,
+        "Favorites must coexist with the Visualizations plugin");
     assert.equal(await page.evaluate(() => Vencord.Plugins.isPluginEnabled("ExcordVisualizations")), false,
         "HTML visualizations must be opt-in on fresh profiles");
     assert.equal(await page.evaluate(() => Vencord.Plugins.plugins.ExcordVisualizations.enabledByDefault), false);
