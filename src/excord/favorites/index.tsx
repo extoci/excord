@@ -33,8 +33,11 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
     };
     // Discord's ListItem is the wrapper every native rail item uses. Reusing it
     // keeps the star on the same layout metrics as Home without resolving a CSS
-    // module that may not be loaded yet.
-    const ListItem = (findByCodeLazy('displayName="ListItem"') as { c: NativeComponent }).c;
+    // module that may not be loaded yet. It is a named export, so map the
+    // module by its displayName marker rather than looking up the export.
+    const ListItem = mapMangledModuleLazy('displayName="ListItem"', {
+        ListItem: filters.byProps("displayName")
+    }).ListItem as NativeComponent;
     const channelClasses = findCssClassesLazy("containerDefault", "iconVisibility", "iconBase");
     const requireGuildSidebar = webpack.extractAndLoadChunksLazy(['name:"GuildSidebar"'], guildSidebarChunks);
     const requireSettingsModal = webpack.extractAndLoadChunksLazy(['type:"USER_SETTINGS_MODAL_OPEN"']);

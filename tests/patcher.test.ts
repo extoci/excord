@@ -246,7 +246,7 @@ test("Favorites captures the real category after tutorial modules through the pr
   const dummy = () => () => null;
   const plugin = createFavoritesPlugin({
     "@webpack/common": {}, "@api/ServerList": {}, "@api/DataStore": {}, "@components/ErrorBoundary": { default: dummy },
-    "@webpack": { extractAndLoadChunksLazy: dummy, filters: { byCode: dummy }, findComponentByCodeLazy: dummy, findByCodeLazy: dummy, findByPropsLazy: dummy, mapMangledModuleLazy: dummy, findCssClassesLazy: dummy }
+    "@webpack": { extractAndLoadChunksLazy: dummy, filters: { byCode: dummy, byProps: dummy }, findComponentByCodeLazy: dummy, findByCodeLazy: dummy, findByPropsLazy: dummy, mapMangledModuleLazy: dummy, findCssClassesLazy: dummy }
   });
   const patch = plugin.patches[3];
   const canonical = (regex: RegExp) => new RegExp(regex.source.replaceAll("\\i", "[A-Za-z_$][\\w$]*"));
