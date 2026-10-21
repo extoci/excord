@@ -1,6 +1,7 @@
-import type { ComponentType, MouseEvent, ReactNode } from "react";
+import type { ComponentType, MouseEvent, ReactElement, ReactNode } from "react";
 
 import { DEFAULT_CATEGORY, type FavoriteCategory, FavoritesRepository } from "./model";
+import { adaptCategory, categoryMatch, guildSidebarChunks } from "./native";
 
 type NativeComponent = ComponentType<Record<string, any>>;
 type Common = typeof import("@equicord/types/webpack/common") & {
@@ -31,9 +32,14 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
         addRouteChangeListener(callback: (route: { pathname: string }) => void): () => void;
     };
     const railClasses = findCssClassesLazy("listItem");
-    const categoryClasses = findCssClassesLazy("privateChannelsHeaderContainer", "headerText");
+    const channelClasses = findCssClassesLazy("containerDefault", "iconVisibility", "iconBase");
+    const requireGuildSidebar = webpack.extractAndLoadChunksLazy(['name:"GuildSidebar"'], guildSidebarChunks);
+    const requireSettingsModal = webpack.extractAndLoadChunksLazy(['type:"USER_SETTINGS_MODAL_OPEN"']);
+    const createChannelRecord = findByCodeLazy(".GUILD_TEXT]", "fromServer)") as (data: Record<string, unknown>) => Channel;
+    let NativeCategory: NativeComponent | undefined;
     let running = false;
     let active = false;
+    let opening = 0;
     let revision = 0;
     let removeRouteListener: (() => void) | undefined;
     const listeners = new Set<() => void>();
@@ -81,14 +87,25 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
         });
     }
 
-    function setActive(value: boolean) { active = value && running && repository.ready; emit(); }
+    function setActive(value: boolean) { if (!value) opening++; active = value && running && repository.ready; emit(); }
     function select(channel: Channel) {
         repository.change({ type: "select", channelId: channel.id });
         if (channel.isThread()) common.ChannelRouter.transitionToThread(channel);
         else common.ChannelRouter.transitionToChannel(channel.id);
     }
-    function openFavorites() {
+    async function openFavorites() {
         if (!repository.ready) return;
+        const request = ++opening;
+        const accountId = repository.accountId;
+        try {
+            if (!NativeCategory && !await requireGuildSidebar()) throw new Error("Could not load Discord's category component");
+            if (!NativeCategory) throw new Error("Discord's category component was not found");
+        } catch (error) {
+            console.error("[ExcordFavorites] Native category UI unavailable", error);
+            common.Toasts.show({ message: "Favorites is unavailable in this Discord build. Your saved favorites are preserved.", id: "excord-favorites-ui", type: common.Toasts.Type.FAILURE });
+            return;
+        }
+        if (request !== opening || !running || accountId !== repository.accountId || !repository.ready) return;
         setActive(true);
         const ids = repository.data.categories.flatMap(c => c.channelIds);
         const last = repository.data.lastChannelId;
@@ -117,20 +134,29 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
         </div>;
     }
 
+    function CategoryDialog({ category, accountId, modalProps }: {
+        category?: FavoriteCategory; accountId?: string;
+        modalProps: { transitionState: number; onClose(): void };
+    }) {
+        const { React, Modal, TextInput } = common;
+        const [name, setName] = React.useState(category?.name ?? "");
+        const save = () => {
+            if (!name.trim() || accountId !== repository.accountId || !repository.ready) return;
+            repository.change(category ? { type: "category-rename", id: category.id, name } : { type: "category-add", id: crypto.randomUUID(), name });
+            modalProps.onClose();
+        };
+        return <Modal {...modalProps} title={category ? "Rename category" : "Create category"}
+            actions={[{ text: "Save", variant: "primary", disabled: !name.trim(), onClick: save }]}>
+            <TextInput value={name} onChange={setName} maxLength={100} autoFocus placeholder="Category name" onKeyDown={event => { if (event.key === "Enter") save(); }} />
+        </Modal>;
+    }
     function promptCategory(category?: FavoriteCategory) {
-        const { React, Modal, TextInput, openModal } = common;
+        const { React } = common;
         const accountId = repository.accountId;
-        openModal(props => {
-            const [name, setName] = React.useState(category?.name ?? "");
-            const save = () => {
-                if (!name.trim() || accountId !== repository.accountId || !repository.ready) return;
-                repository.change(category ? { type: "category-rename", id: category.id, name } : { type: "category-add", id: crypto.randomUUID(), name });
-                props.onClose();
-            };
-            return <Modal {...props} title={category ? "Rename category" : "Create category"}
-                actions={[{ text: "Save", variant: "primary", disabled: !name.trim(), onClick: save }]}>
-                <TextInput value={name} onChange={setName} maxLength={100} autoFocus placeholder="Category name" onKeyDown={event => { if (event.key === "Enter") save(); }} />
-            </Modal>;
+        void common.openModalLazy(async () => {
+            if (!await requireSettingsModal()) throw new Error("Could not load Discord's category dialog");
+            return props => running && repository.ready && accountId === repository.accountId
+                ? <CategoryDialog modalProps={props} category={category} accountId={accountId} /> : null;
         });
     }
 
@@ -156,7 +182,7 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
 
     function useReorder(kind: "channel" | "category", id: string, categoryId: string) {
         const { React, useDrag, useDrop } = common;
-        const ref = React.useRef<HTMLDivElement>(null);
+        const ref = React.useRef<HTMLLIElement>(null);
         const accountId = repository.accountId;
         const [, drag] = useDrag(() => ({ type: `EXCORD_FAVORITE_${kind}`, item: { id, kind, accountId } }), [id, kind, accountId]);
         const [{ over }, drop] = useDrop(() => ({
@@ -183,47 +209,51 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
         const selected = common.useStateFromStores([SelectedChannelStore], () => SelectedChannelStore.getChannelId() === id);
         const connected = common.useStateFromStores([SelectedChannelStore], () => SelectedChannelStore.getVoiceChannelId() === id);
         if (!channel || !state) return null;
-        return <div {...drag} onClickCapture={() => repository.change({ type: "select", channelId: id })}>
+        return <li {...drag} className={channelClasses.containerDefault} onClickCapture={() => repository.change({ type: "select", channelId: id })}>
             <ChannelRow channel={channel} guild={common.GuildStore.getGuild(channel.guild_id)} selected={selected} connected={connected} muted={state.muted}
+                className={channelClasses.iconVisibility}
                 unread={state.unread} mentionCount={state.mentions} resolvedUnreadSetting={state.resolvedUnreadSetting} forceInteractable
                 onClick={() => { if (channel.isGuildVocal()) common.ChannelActions.selectVoiceChannel(id); else select(channel); }}
                 onContextMenu={(event: MouseEvent) => menu(event, channelItems(channel))}>
                 {state.mentions > 0 && <NumberBadge count={state.mentions} />}
             </ChannelRow>
-        </div>;
+        </li>;
     }
 
     function Category({ category }: { category: FavoriteCategory }) {
-        const { React, Menu, Clickable } = common;
+        const { React, Menu } = common;
         const drag = useReorder("category", category.id, category.id);
-        const state = useUnread(category.channelIds);
-        return <section>
-            <div {...drag}><Clickable className={categoryClasses.privateChannelsHeaderContainer} aria-expanded={!category.collapsed}
-                onClick={() => repository.change({ type: "category-collapse", id: category.id })}
-                onContextMenu={(event: MouseEvent) => menu(event, <Menu.MenuGroup>
+        // This is a display record only, never inserted into ChannelStore or sent
+        // to Discord. Native UI reads its name/type; all actions stay local.
+        const record = React.useMemo(() => createChannelRecord({ id: `excord-favorites-${category.id}`, type: 4, name: category.name }), [category.id, category.name]);
+        if (!NativeCategory) throw new Error("Discord's category component was not loaded");
+        return <React.Fragment>
+            <NativeCategory channel={record} disableManageChannels
+                connectChannelDragSource={(node: ReactElement) => React.cloneElement(node, drag)}
+                connectChannelDropTarget={(node: ReactNode) => node}
+                excordFavoritesCategory={{ collapsed: category.collapsed,
+                    onClick: () => repository.change({ type: "category-collapse", id: category.id }),
+                    onContextMenu: (event: MouseEvent) => menu(event, <Menu.MenuGroup>
                     <Menu.MenuItem id="excord-category-new" label="Create category" action={() => promptCategory()} />
                     <Menu.MenuItem id="excord-category-rename" label="Rename category" action={() => promptCategory(category)} />
                     <Menu.MenuItem id="excord-category-up" label="Move category up" disabled={repository.data.categories[0].id === category.id}
                         action={() => { const index = repository.data.categories.findIndex(c => c.id === category.id); repository.change({ type: "category-move", id: category.id, beforeId: repository.data.categories[index - 1]?.id }); }} />
                     {category.id !== DEFAULT_CATEGORY && <Menu.MenuItem id="excord-category-delete" label="Delete category" color="danger"
                         action={() => repository.change({ type: "category-delete", id: category.id })} />}
-                </Menu.MenuGroup>)}>
-                <span className={categoryClasses.headerText}>{category.collapsed ? "▸ " : "▾ "}{category.name}</span>
-                {category.collapsed && state.mentions > 0 && <NumberBadge count={state.mentions} />}
-            </Clickable></div>
+                </Menu.MenuGroup>) }} />
             {!category.collapsed && category.channelIds.map(id => <Row key={id} id={id} categoryId={category.id} />)}
-        </section>;
+        </React.Fragment>;
     }
     function List() {
         const { React, ScrollerThin, Menu } = common;
         const data = useFavorites();
         const listProps = nav.useListProps();
-        return <ScrollerThin {...listProps} aria-label="Favorite channels" style={{ flex: 1 }}><div onContextMenu={(event: MouseEvent) => {
+        return <ScrollerThin {...listProps} aria-label="Favorite channels" style={{ flex: 1 }}><ul style={{ padding: 0, margin: 0, listStyle: "none" }} onContextMenu={(event: MouseEvent) => {
             if (event.target === event.currentTarget) menu(event, <Menu.MenuItem id="excord-category-new" label="Create category" action={() => promptCategory()} />);
         }}>
             {data.categories.map(category => <Category key={category.id} category={category} />)}
-            {!data.categories.some(c => c.channelIds.length) && <common.Text variant="text-sm/normal" color="text-muted" style={{ padding: 16 }}>Right-click a channel or conversation and choose Add to Favorites.</common.Text>}
-        </div></ScrollerThin>;
+            {!data.categories.some(c => c.channelIds.length) && <li><common.Text variant="text-sm/normal" color="text-muted" style={{ padding: 16 }}>Right-click a channel or conversation and choose Add to Favorites.</common.Text></li>}
+        </ul></ScrollerThin>;
     }
     function FavoritesView() {
         const { React, Clickable, Menu } = common;
@@ -252,7 +282,7 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
             && target.closest('[data-guilds-bar-home], [data-list-item-id^="guildsnav___"]')) setActive(false);
     };
     const accountChanged = () => {
-        active = false;
+        setActive(false);
         void repository.load(common.UserStore.getCurrentUser()?.id);
     };
     return {
@@ -262,6 +292,7 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
         enabledByDefault: true,
         dependencies: ["ServerListAPI"],
         startAt: "WebpackReady",
+        captureCategory(component: NativeComponent) { NativeCategory = component; return component; },
         renderSidebar(fallback: () => ReactNode) {
             const { React } = common;
             return <Sidebar fallback={fallback} />;
@@ -288,6 +319,9 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
                 match: /(function \i\((\i)\)\{)(?=let \i,\i,\{backgroundStyle:)/,
                 replace: "$1$2=$self.useRailProps($2);"
             }
+        }, {
+            find: '"organize-by-topic"',
+            replacement: { match: categoryMatch, replace: adaptCategory }
         }],
         contextMenus: Object.fromEntries(["channel-context", "thread-context", "user-context", "gdm-context"].map(id => [id, contextMenuPatch])),
         start() {

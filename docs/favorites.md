@@ -12,7 +12,9 @@ Categories, ordering, collapse state, and the last selection are saved locally p
 
 ## Integration
 
-The implementation lives in `src/excord/favorites` and is registered before the bundled plugin manager starts. The vendor tree is unchanged. It uses ServerListAPI for placement and Discord's rail button, mask, selection pill, channel row, badges, header, menus, modal, scroller, keyboard navigation, and drag-and-drop hooks. Only the channel-list body is replaced; the native server rail, resize control, account panel, chat, and underlying channel records remain under Discord's control.
+The implementation lives in `src/excord/favorites` and is registered before the bundled plugin manager starts. The vendor tree is unchanged. It uses ServerListAPI for placement and Discord's rail button, mask, selection pill, server category component, channel row and list wrappers, badges, header, menus, modal, scroller, keyboard navigation, and drag-and-drop hooks. Only the channel-list body is replaced; the native server rail, resize control, account panel, chat, and underlying channel records remain under Discord's control.
+
+The category patch captures the native component before its guild drag-and-drop wrapper. Favorites supplies local collapse/menu handlers and a display-only category record. That record never enters ChannelStore, and the component's server mutation actions are replaced only for Favorites. Opening Favorites loads Discord's GuildSidebar chunks if necessary. Category dialogs load the native modal chunks and render their stateful form as a React component, since Discord calls modal render callbacks from a class component.
 
 Unread state comes from ReadStateStore. Mute and unread preferences come from UserGuildSettingsStore and JoinedThreadsStore. Forum new-post indicators come from ActiveJoinedThreadsStore. Entries and the rail subscribe to those stores, ChannelStore, and PermissionStore. Badge counts are not cached or synthesized from incoming message events.
 
@@ -20,7 +22,7 @@ If a native view component fails, the plugin restores Discord's normal sidebar a
 
 ## Verification
 
-Run `bun run check`, `bun run typecheck:reference`, and `bun run build`. The favorites tests cover unique entries, category moves and deletion, corrupt storage, account-switch races, queued saves, storage failure, and sidebar patch boundaries.
+Run `bun run check`, `bun run typecheck:reference`, and `bun run build`. The favorites tests cover unique entries, category moves and deletion, corrupt storage, account-switch races, queued saves, storage failure, sidebar patch boundaries, create/rename modal hook safety, and native category action isolation.
 
 Signed-in checks should cover text, announcement, forum/media, thread, voice/stage, DM, and group DM entries; category drag-and-drop and collapse; leaving Favorites through Home and server icons; restoring the last selection; read acknowledgements in both directions; mentions and mute changes; permission loss; account switching; and disabling the plugin. Component lookup and build checks alone do not establish those behaviors.
 

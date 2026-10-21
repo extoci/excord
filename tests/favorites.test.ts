@@ -105,7 +105,7 @@ test("sidebar patch replaces only the channel-list body, retaining rail, panels,
     const dummy = () => () => null;
     const plugin = createFavoritesPlugin({
         "@webpack/common": {}, "@api/ServerList": {}, "@api/DataStore": {}, "@components/ErrorBoundary": { default: dummy },
-        "@webpack": { filters: { byCode: dummy }, findComponentByCodeLazy: dummy, findByCodeLazy: dummy, findByPropsLazy: dummy, mapMangledModuleLazy: dummy, findCssClassesLazy: dummy }
+        "@webpack": { extractAndLoadChunksLazy: () => async () => true, filters: { byCode: dummy }, findComponentByCodeLazy: dummy, findByCodeLazy: dummy, findByPropsLazy: dummy, mapMangledModuleLazy: dummy, findCssClassesLazy: dummy }
     });
     const replacement = plugin.patches[0].replacement;
     const match = new RegExp(replacement.match.source.replaceAll("\\i", "[A-Za-z_$][\\w$]*"));
@@ -156,7 +156,7 @@ test("rail reads current unread/mention state, observes notification stores, and
             "@api/DataStore": { get: async () => data, set: async () => {} },
             "@components/ErrorBoundary": { default: "error-boundary" },
             "@webpack": {
-                filters: { byCode: () => () => true }, findComponentByCodeLazy: lazyComponent, findByCodeLazy: lazyComponent,
+                extractAndLoadChunksLazy: () => async () => true, filters: { byCode: () => () => true }, findComponentByCodeLazy: lazyComponent, findByCodeLazy: lazyComponent,
                 findByPropsLazy: () => ({ addRouteChangeListener: () => () => {} }),
                 mapMangledModuleLazy: () => ({ useRailItem: () => ({ role: "treeitem" }) }), findCssClassesLazy: () => ({ listItem: "native-list-item" })
             }
