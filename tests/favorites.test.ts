@@ -162,7 +162,8 @@ test("rail reads current unread/mention state, observes notification stores, and
             "@api/DataStore": { get: async () => data, set: async () => {} },
             "@components/ErrorBoundary": { default: "error-boundary" },
             "@webpack": {
-                extractAndLoadChunksLazy: () => async () => true, filters: { byCode: () => () => true }, findComponentByCodeLazy: lazyComponent, findByCodeLazy: lazyComponent,
+                extractAndLoadChunksLazy: () => async () => true, filters: { byCode: () => () => true }, findComponentByCodeLazy: lazyComponent,
+                findByCodeLazy: (...terms: unknown[]) => terms.includes('displayName="ListItem"') ? { c: "native-rail-item" } : lazyComponent(...terms),
                 findByPropsLazy: () => ({ addRouteChangeListener: () => () => {} }),
                 mapMangledModuleLazy: () => ({ useRailItem: () => ({ role: "treeitem" }) }),
                 findCssClassesLazy: (...keys: string[]) => [
@@ -181,7 +182,7 @@ test("rail reads current unread/mention state, observes notification stores, and
         };
         const state = () => {
             const tree = Rail();
-            expect(tree.props.className).toBe("native-list-item");
+            expect(tree.type).toBe("native-rail-item");
             const pill = find(tree, e => String(e.type).includes("overlay:"))!;
             // Tooltip's render function contains the native mask and mention badge.
             const tooltip = find(tree, e => e.props.text === "Favorites")!;

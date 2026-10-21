@@ -90,26 +90,32 @@ try {
         const root = common.createRoot(host);
         try {
             // Signed-out startup does not load the guild route. Load its real
-            // chunks, including the earlier tutorial registry that used to
-            // consume Favorites' one-shot patch. Never inject a category stub.
-            await webpack.extractAndLoadChunks(["GuildSettingsActionCreators"]);
+            // chunks; never inject a category stub. The category-specific
+            // matcher means an unrelated tutorial module cannot consume the
+            // patch, which unit tests exercise with the real patcher.
             const loaded = await webpack.extractAndLoadChunks(['name:"GuildSidebar"'], /createPromise:\(\)=>Promise\.all\(\[([^\]]+)\]\)\.then\(\i\.bind\(\i,(\d+)\)\),webpackId:\d+,name:"GuildSidebar"/);
             root.render(common.React.createElement(common.React.Fragment, null, ...serverList.renderAll(0)));
             await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-            const button = host.querySelector('[data-excord-favorites="true"][tabindex]');
-            const icon = button?.querySelector("svg");
-            const item = button?.closest('[class*="listItem_"]');
+            // Home and guild items are Clickables, not always buttons, and the
+            // rail item props only include a tabindex inside the real
+            // navigator. Find the Favorites clickable by its own star instead.
+            const rail = [...host.querySelectorAll('[data-excord-favorites="true"]')].find(element => element.querySelector("svg"));
+            const icon = rail?.querySelector("svg");
+            const item = rail?.closest('[class*="listItem_"]');
             const iconBounds = icon?.getBoundingClientRect(), itemBounds = item?.getBoundingClientRect();
             return { loaded, captured, centered: !!iconBounds && !!itemBounds && iconBounds.width > 0 && itemBounds.width > iconBounds.width
-                && Math.abs(iconBounds.x + iconBounds.width / 2 - itemBounds.x - itemBounds.width / 2) < 1 };
+                    && Math.abs(iconBounds.x + iconBounds.width / 2 - itemBounds.x - itemBounds.width / 2) < 1,
+                railTag: rail?.tagName, railClass: rail?.className, itemClass: item?.className,
+                iconBounds: iconBounds && { x: iconBounds.x, width: iconBounds.width, height: iconBounds.height },
+                itemBounds: itemBounds && { x: itemBounds.x, width: itemBounds.width, height: itemBounds.height } };
         } finally {
             favorites.captureCategory = originalCapture;
             root.unmount(); host.remove();
         }
     });
     assert.equal(favoritesUI.loaded, true, "Discord's guild sidebar chunks must load");
-    assert.ok(favoritesUI.captured > 0, "The production category patch must capture Discord's real component after tutorial modules load");
-    assert.equal(favoritesUI.centered, true, "Favorites must use the native rail item wrapper and remain centered");
+    assert.ok(favoritesUI.captured > 0, "The production category patch must capture Discord's real component");
+    assert.equal(favoritesUI.centered, true, `Favorites must use the native rail item wrapper and remain centered: ${JSON.stringify(favoritesUI)}`);
     console.log("[smoke] Favorites captured the real native category and its rail icon is centered");
     assert.equal(await page.evaluate(() => Object.hasOwn(Vencord.Plugins.plugins, "ExcordVisualizations")), true,
         "Favorites must coexist with the Visualizations plugin");

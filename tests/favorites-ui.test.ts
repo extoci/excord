@@ -56,7 +56,8 @@ async function dialogHarness({ captureNative = true } = {}) {
         "@api/ServerList": { addServerListElement: (_position: unknown, render: React.FunctionComponent) => { Rail = render; }, removeServerListElement() {} },
         "@components/ErrorBoundary": { default: "native-error-boundary" },
         "@webpack": { filters: { byCode: () => () => true }, findComponentByCodeLazy: lazy,
-            findByCodeLazy: () => () => ({}), findByPropsLazy: () => ({ addRouteChangeListener: () => () => {} }),
+            findByCodeLazy: (...terms: unknown[]) => terms.includes('displayName="ListItem"') ? { c: "native-rail-item" } : () => ({}),
+            findByPropsLazy: () => ({ addRouteChangeListener: () => () => {} }),
             extractAndLoadChunksLazy: () => async () => true,
             mapMangledModuleLazy: () => ({ useRailItem: () => ({}), useListProps: () => ({}), Provider: "native-nav-provider" }),
             findCssClassesLazy: () => ({}) }
