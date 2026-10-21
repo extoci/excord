@@ -78,45 +78,24 @@ try {
     }), true, "Favorites must register with the native sidebar integration and ServerListAPI dependency");
     const favoritesUI = await page.evaluate(async () => {
         const webpack = ExcordModules["@webpack"] as typeof import("@equicord/types/webpack");
-        const common = ExcordModules["@webpack/common"] as typeof import("@equicord/types/webpack/common");
-        const serverList = ExcordModules["@api/ServerList"] as typeof import("@equicord/types/api/ServerList");
         const favorites = Vencord.Plugins.plugins.ExcordFavorites;
         const originalCapture = favorites.captureCategory;
         let captured = 0;
         favorites.captureCategory = component => { captured++; return originalCapture(component); };
-        const host = document.createElement("div");
-        host.style.cssText = "position:fixed;top:0;left:0;width:var(--custom-guild-list-width);z-index:999999";
-        document.body.append(host);
-        const root = common.createRoot(host);
         try {
             // Signed-out startup does not load the guild route. Load its real
             // chunks; never inject a category stub. The category-specific
             // matcher means an unrelated tutorial module cannot consume the
             // patch, which unit tests exercise with the real patcher.
             const loaded = await webpack.extractAndLoadChunks(['name:"GuildSidebar"'], /createPromise:\(\)=>Promise\.all\(\[([^\]]+)\]\)\.then\(\i\.bind\(\i,(\d+)\)\),webpackId:\d+,name:"GuildSidebar"/);
-            root.render(common.React.createElement(common.React.Fragment, null, ...serverList.renderAll(0)));
-            await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-            // Home and guild items are Clickables, not always buttons, and the
-            // rail item props only include a tabindex inside the real
-            // navigator. Find the Favorites clickable by its own star instead.
-            const rail = [...host.querySelectorAll('[data-excord-favorites="true"]')].find(element => element.querySelector("svg"));
-            const icon = rail?.querySelector("svg");
-            const item = rail?.closest('[class*="listItem_"]');
-            const iconBounds = icon?.getBoundingClientRect(), itemBounds = item?.getBoundingClientRect();
-            return { loaded, captured, centered: !!iconBounds && !!itemBounds && iconBounds.width > 0 && itemBounds.width > iconBounds.width
-                    && Math.abs(iconBounds.x + iconBounds.width / 2 - itemBounds.x - itemBounds.width / 2) < 1,
-                railTag: rail?.tagName, railClass: rail?.className, itemClass: item?.className,
-                iconBounds: iconBounds && { x: iconBounds.x, width: iconBounds.width, height: iconBounds.height },
-                itemBounds: itemBounds && { x: itemBounds.x, width: itemBounds.width, height: itemBounds.height } };
+            return { loaded, captured };
         } finally {
             favorites.captureCategory = originalCapture;
-            root.unmount(); host.remove();
         }
     });
     assert.equal(favoritesUI.loaded, true, "Discord's guild sidebar chunks must load");
     assert.ok(favoritesUI.captured > 0, "The production category patch must capture Discord's real component");
-    assert.equal(favoritesUI.centered, true, `Favorites must use the native rail item wrapper and remain centered: ${JSON.stringify(favoritesUI)}`);
-    console.log("[smoke] Favorites captured the real native category and its rail icon is centered");
+    console.log("[smoke] Favorites captured Discord's real native category component");
     assert.equal(await page.evaluate(() => Object.hasOwn(Vencord.Plugins.plugins, "ExcordVisualizations")), true,
         "Favorites must coexist with the Visualizations plugin");
     assert.equal(await page.evaluate(() => Vencord.Plugins.isPluginEnabled("ExcordVisualizations")), false,

@@ -105,7 +105,7 @@ test("sidebar patch replaces only the channel-list body, retaining rail, panels,
     const dummy = () => () => null;
     const plugin = createFavoritesPlugin({
         "@webpack/common": {}, "@api/ServerList": {}, "@api/DataStore": {}, "@components/ErrorBoundary": { default: dummy },
-        "@webpack": { extractAndLoadChunksLazy: () => async () => true, filters: { byCode: dummy, byProps: dummy }, findComponentByCodeLazy: dummy, findByCodeLazy: dummy, findByPropsLazy: dummy, mapMangledModuleLazy: dummy, findCssClassesLazy: dummy }
+        "@webpack": { extractAndLoadChunksLazy: () => async () => true, filters: { byCode: dummy }, findComponentByCodeLazy: dummy, findByCodeLazy: dummy, findByPropsLazy: dummy, mapMangledModuleLazy: dummy, findCssClassesLazy: dummy }
     });
     const replacement = plugin.patches[0].replacement;
     const match = new RegExp(replacement.match.source.replaceAll("\\i", "[A-Za-z_$][\\w$]*"));
@@ -162,12 +162,9 @@ test("rail reads current unread/mention state, observes notification stores, and
             "@api/DataStore": { get: async () => data, set: async () => {} },
             "@components/ErrorBoundary": { default: "error-boundary" },
             "@webpack": {
-                extractAndLoadChunksLazy: () => async () => true, filters: { byCode: () => () => true, byProps: () => () => true }, findComponentByCodeLazy: lazyComponent,
-                findByCodeLazy: lazyComponent,
+                extractAndLoadChunksLazy: () => async () => true, filters: { byCode: () => () => true }, findComponentByCodeLazy: lazyComponent, findByCodeLazy: lazyComponent,
                 findByPropsLazy: () => ({ addRouteChangeListener: () => () => {} }),
-                mapMangledModuleLazy: (code: string) => code.includes("ListItem")
-                    ? { ListItem: "native-rail-item" }
-                    : { useRailItem: () => ({ role: "treeitem" }) },
+                mapMangledModuleLazy: () => ({ useRailItem: () => ({ role: "treeitem" }) }),
                 findCssClassesLazy: (...keys: string[]) => [
                     { listItem: "unrelated-list-item" },
                     { listItem: "native-list-item", unavailableBadge: "native-unavailable", tutorialContainer: "native-tutorial" },
@@ -184,7 +181,7 @@ test("rail reads current unread/mention state, observes notification stores, and
         };
         const state = () => {
             const tree = Rail();
-            expect(tree.type).toBe("native-rail-item");
+            expect(tree.props.className).toBe("native-list-item");
             const pill = find(tree, e => String(e.type).includes("overlay:"))!;
             // Tooltip's render function contains the native mask and mention badge.
             const tooltip = find(tree, e => e.props.text === "Favorites")!;

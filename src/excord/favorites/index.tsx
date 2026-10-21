@@ -31,13 +31,7 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
     const routeChanges = webpack.findByPropsLazy("addRouteChangeListener") as {
         addRouteChangeListener(callback: (route: { pathname: string }) => void): () => void;
     };
-    // Discord's ListItem is the wrapper every native rail item uses. Reusing it
-    // keeps the star on the same layout metrics as Home without resolving a CSS
-    // module that may not be loaded yet. It is a named export, so map the
-    // module by its displayName marker rather than looking up the export.
-    const ListItem = mapMangledModuleLazy('displayName="ListItem"', {
-        ListItem: filters.byProps("displayName")
-    }).ListItem as NativeComponent;
+    const railClasses = findCssClassesLazy("listItem", "unavailableBadge", "tutorialContainer");
     const channelClasses = findCssClassesLazy("containerDefault", "iconVisibility", "iconBase");
     const requireGuildSidebar = webpack.extractAndLoadChunksLazy(['name:"GuildSidebar"'], guildSidebarChunks);
     const requireSettingsModal = webpack.extractAndLoadChunksLazy(['type:"USER_SETTINGS_MODAL_OPEN"']);
@@ -127,22 +121,17 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
         const [hovered, setHovered] = React.useState(false);
         const itemProps = nav.useRailItem("excord-favorites");
         if (!running) return null;
-        return <ListItem>
+        return <div className={railClasses.listItem} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
             <Pill data-excord-favorites="true" overlay selected={active} hovered={hovered} unread={state.unread} />
-            <common.Tooltip text="Favorites" position="right">{tooltipProps => {
-                const { onMouseEnter, onMouseLeave, ...rest } = tooltipProps as Record<string, any>;
-                return <div {...rest}
-                    onMouseEnter={event => { setHovered(true); onMouseEnter?.(event); }}
-                    onMouseLeave={event => { setHovered(false); onMouseLeave?.(event); }}>
-                    <BlobMask selected={active} lowerBadge={state.mentions > 0 ? <NumberBadge count={state.mentions} /> : null}
-                        lowerBadgeSize={{ width: state.mentions < 10 ? 16 : state.mentions < 100 ? 22 : 30, height: 16 }}>
-                        <RailButton {...itemProps} data-excord-favorites="true" ariaLabel="Favorites" aria-selected={active} selected={active || hovered} onClick={openFavorites}>
-                            <Star />
-                        </RailButton>
-                    </BlobMask>
-                </div>;
-            }}</common.Tooltip>
-        </ListItem>;
+            <common.Tooltip text="Favorites" position="right">{tooltipProps => <div {...tooltipProps}>
+                <BlobMask selected={active} lowerBadge={state.mentions > 0 ? <NumberBadge count={state.mentions} /> : null}
+                    lowerBadgeSize={{ width: state.mentions < 10 ? 16 : state.mentions < 100 ? 22 : 30, height: 16 }}>
+                    <RailButton {...itemProps} data-excord-favorites="true" ariaLabel="Favorites" aria-selected={active} selected={active || hovered} onClick={openFavorites}>
+                        <Star />
+                    </RailButton>
+                </BlobMask>
+            </div>}</common.Tooltip>
+        </div>;
     }
 
     function CategoryDialog({ category, accountId, modalProps }: {

@@ -55,13 +55,10 @@ async function dialogHarness({ captureNative = true } = {}) {
         "@api/DataStore": { get: async () => data, set: async (_key: string, value: unknown) => { saves.push(value); } },
         "@api/ServerList": { addServerListElement: (_position: unknown, render: React.FunctionComponent) => { Rail = render; }, removeServerListElement() {} },
         "@components/ErrorBoundary": { default: "native-error-boundary" },
-        "@webpack": { filters: { byCode: () => () => true, byProps: () => () => true }, findComponentByCodeLazy: lazy,
-            findByCodeLazy: () => () => ({}),
-            findByPropsLazy: () => ({ addRouteChangeListener: () => () => {} }),
+        "@webpack": { filters: { byCode: () => () => true }, findComponentByCodeLazy: lazy,
+            findByCodeLazy: () => () => ({}), findByPropsLazy: () => ({ addRouteChangeListener: () => () => {} }),
             extractAndLoadChunksLazy: () => async () => true,
-            mapMangledModuleLazy: (code: string) => code.includes("ListItem")
-                ? { ListItem: "native-rail-item" }
-                : { useRailItem: () => ({}), useListProps: () => ({}), Provider: "native-nav-provider" },
+            mapMangledModuleLazy: () => ({ useRailItem: () => ({}), useListProps: () => ({}), Provider: "native-nav-provider" }),
             findCssClassesLazy: () => ({}) }
     });
     if (captureNative) plugin.captureCategory((props: any) => React.createElement("native-category", { ...props.excordFavoritesCategory }, props.children));
