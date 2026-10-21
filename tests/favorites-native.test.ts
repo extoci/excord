@@ -1,12 +1,12 @@
 import { expect, test } from "bun:test";
 
 import { adaptCategory, categoryMatch, guildSidebarChunks } from "../src/excord/favorites/native";
+import { factory } from "./favorites-category-fixture";
 
 const canonical = (regex: RegExp) => new RegExp(regex.source.replaceAll("\\i", "[A-Za-z_$][\\w$]*"));
 
 // A small executable factory with the native component's input/markup contract.
 // UI remains in the factory; the adapter must only substitute Favorites actions.
-const factory = 'function factory(){return memo(function(props){let wrapper,{channel:channel,connectChannelDragSource:drag,connectChannelDropTarget:drop,disableManageChannels:disable}=props,collapsed=false,muted=true;let click=serverClick,context=serverContext,action={label:"Create channel",perform:serverClick};let{role:role}=navigation,view=jsx("li",{className:"native-category",children:jsx("div",{className:css({[styles.collapsed]:collapsed,[styles.muted]:muted,[styles.clickable]:!0}),onContextMenu:context,children:[jsx("button",{onClick:click,"aria-label":channel.name,"aria-expanded":!collapsed,children:[channel.name,jsx("native-chevron",{})]}),jsx("div",{children:null!=action?(0,r.jsx)(Action,{label:action.label,onClick:action.perform}):null})]})});return null!=drop&&null!=drag?drop(drag(view)):view})}';
 
 test("captures the native category UI and confines local actions to Favorites", () => {
     const matches = [...factory.matchAll(new RegExp(canonical(categoryMatch), "g"))];

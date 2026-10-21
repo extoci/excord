@@ -119,6 +119,12 @@ test("sidebar patch replaces only the channel-list body, retaining rail, panels,
     const railFind = new RegExp(railPatch.find.source.replaceAll("\\i", "[A-Za-z_$][\\w$]*"));
     expect(railFind.test('function Rail(props){let a,b,{backgroundStyle:style="always",children:child,icon:icon,name:name,ariaLabel:label}=props}')).toBe(true);
     expect(railFind.test('function Marketing(props){let{backgroundAsset:asset,backgroundStyle:style,shouldApplyFade:fade}=props}')).toBe(false);
+    const categoryPatch = plugin.patches[3];
+    const isCategoryFactory = (source: string) => typeof categoryPatch.find === "string"
+        ? source.includes(categoryPatch.find) : new RegExp(categoryPatch.find.source.replaceAll("\\i", "[A-Za-z_$][\\w$]*")).test(source);
+    // Discord loads this tutorial registry before the guild sidebar. A broad
+    // find consumes the one-shot patch here, leaving the category uncaptured.
+    expect(isCategoryFactory('const tutorials={"organize-by-topic":{prerequisites:[]}}')).toBe(false);
 });
 
 test("rail reads current unread/mention state, observes notification stores, and omits inaccessible favorites", async () => {
@@ -158,7 +164,12 @@ test("rail reads current unread/mention state, observes notification stores, and
             "@webpack": {
                 extractAndLoadChunksLazy: () => async () => true, filters: { byCode: () => () => true }, findComponentByCodeLazy: lazyComponent, findByCodeLazy: lazyComponent,
                 findByPropsLazy: () => ({ addRouteChangeListener: () => () => {} }),
-                mapMangledModuleLazy: () => ({ useRailItem: () => ({ role: "treeitem" }) }), findCssClassesLazy: () => ({ listItem: "native-list-item" })
+                mapMangledModuleLazy: () => ({ useRailItem: () => ({ role: "treeitem" }) }),
+                findCssClassesLazy: (...keys: string[]) => [
+                    { listItem: "unrelated-list-item" },
+                    { listItem: "native-list-item", unavailableBadge: "native-unavailable", tutorialContainer: "native-tutorial" },
+                    { containerDefault: "native-channel", iconVisibility: "native-channel-icons", iconBase: "native-icon" }
+                ].find(classes => keys.every(key => key in classes))
             }
         });
         plugin.start();
@@ -170,6 +181,7 @@ test("rail reads current unread/mention state, observes notification stores, and
         };
         const state = () => {
             const tree = Rail();
+            expect(tree.props.className).toBe("native-list-item");
             const pill = find(tree, e => String(e.type).includes("overlay:"))!;
             // Tooltip's render function contains the native mask and mention badge.
             const tooltip = find(tree, e => e.props.text === "Favorites")!;

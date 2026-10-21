@@ -18,7 +18,7 @@ function find(node: any, predicate: (node: Node) => boolean): Node | undefined {
     }
 }
 
-async function dialogHarness() {
+async function dialogHarness({ captureNative = true } = {}) {
     const originalDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
     Object.defineProperty(globalThis, "document", { configurable: true, value: { addEventListener() {}, removeEventListener() {} } });
     let renderingUI = true;
@@ -30,6 +30,7 @@ async function dialogHarness() {
     let accountId = "account-a";
     let accountListener = () => {};
     const saves: any[] = [];
+    const messages: string[] = [];
     const lazy = (...terms: unknown[]) => `native-${terms.join("|")}`;
     const connect = (node: unknown) => node;
     const common = {
@@ -47,7 +48,7 @@ async function dialogHarness() {
         TextInput: (props: any) => React.createElement("input", { value: props.value, readOnly: true }),
         openModal: (render: typeof renderModal) => { renderModal = render; },
         openModalLazy: async (load: () => Promise<typeof renderModal>) => { renderModal = await load(); },
-        Toasts: { Type: { FAILURE: "failure" }, show() {} }
+        Toasts: { show() {} }, showToast(message: string) { messages.push(message); }
     };
     const plugin = createFavoritesPlugin({
         "@webpack/common": common,
@@ -60,11 +61,16 @@ async function dialogHarness() {
             mapMangledModuleLazy: () => ({ useRailItem: () => ({}), useListProps: () => ({}), Provider: "native-nav-provider" }),
             findCssClassesLazy: () => ({}) }
     });
-    plugin.captureCategory((props: any) => React.createElement("native-category", { ...props.excordFavoritesCategory }, props.children));
+    if (captureNative) plugin.captureCategory((props: any) => React.createElement("native-category", { ...props.excordFavoritesCategory }, props.children));
     plugin.start();
     await new Promise(resolve => setTimeout(resolve, 0));
     const rail = Rail({}) as Node;
-    await find(rail, e => !!e.props["data-excord-favorites"] && !!e.props.onClick)!.props.onClick();
+    try { await find(rail, e => !!e.props["data-excord-favorites"] && !!e.props.onClick)!.props.onClick(); }
+    catch (error) {
+        plugin.stop();
+        if (originalDocument) Object.defineProperty(globalThis, "document", originalDocument); else Reflect.deleteProperty(globalThis, "document");
+        throw error;
+    }
     const sidebar = () => plugin.renderSidebar(() => null);
     return {
         async open(rename: boolean) {
@@ -82,9 +88,16 @@ async function dialogHarness() {
         props: () => dialogProps,
         async switchAccount() { accountId = "account-b"; accountListener(); await new Promise(resolve => setTimeout(resolve, 0)); },
         saves,
+        messages,
         cleanup() { plugin.stop(); if (originalDocument) Object.defineProperty(globalThis, "document", originalDocument); else Reflect.deleteProperty(globalThis, "document"); }
     };
 }
+
+test("a missing native category renderer reports an error without rejecting the Favorites click", async () => {
+    const h = await dialogHarness({ captureNative: false });
+    try { expect(h.messages).toEqual(["Favorites is unavailable in this Discord build. Your saved favorites are preserved."]); }
+    finally { h.cleanup(); }
+});
 
 for (const rename of [false, true]) test(`${rename ? "rename" : "create"} category opens through Discord's modal callback without an invalid hook call`, async () => {
     const h = await dialogHarness();

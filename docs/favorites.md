@@ -22,7 +22,7 @@ If a native view component fails, the plugin restores Discord's normal sidebar a
 
 ## Verification
 
-Run `bun run check`, `bun run typecheck:reference`, and `bun run build`. The favorites tests cover unique entries, category moves and deletion, corrupt storage, account-switch races, queued saves, storage failure, sidebar patch boundaries, create/rename modal hook safety, and native category action isolation.
+Run `bun run check`, `bun run typecheck:reference`, and `bun run build`. The favorites tests cover unique entries, category moves and deletion, corrupt storage, account-switch races, queued saves, storage failure, sidebar patch boundaries, create/rename modal hook safety, native category action isolation, and one-shot patch consumption by earlier tutorial modules. The Electron smoke also loads Discord's real GuildSidebar, verifies that the production plugin captures its category component, and measures the native rail icon alignment.
 
 Signed-in checks should cover text, announcement, forum/media, thread, voice/stage, DM, and group DM entries; category drag-and-drop and collapse; leaving Favorites through Home and server icons; restoring the last selection; read acknowledgements in both directions; mentions and mute changes; permission loss; account switching; and disabling the plugin. Component lookup and build checks alone do not establish those behaviors.
 

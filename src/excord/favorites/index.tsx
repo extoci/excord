@@ -31,7 +31,7 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
     const routeChanges = webpack.findByPropsLazy("addRouteChangeListener") as {
         addRouteChangeListener(callback: (route: { pathname: string }) => void): () => void;
     };
-    const railClasses = findCssClassesLazy("listItem");
+    const railClasses = findCssClassesLazy("listItem", "unavailableBadge", "tutorialContainer");
     const channelClasses = findCssClassesLazy("containerDefault", "iconVisibility", "iconBase");
     const requireGuildSidebar = webpack.extractAndLoadChunksLazy(['name:"GuildSidebar"'], guildSidebarChunks);
     const requireSettingsModal = webpack.extractAndLoadChunksLazy(['type:"USER_SETTINGS_MODAL_OPEN"']);
@@ -47,7 +47,7 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
     const subscribe = (listener: () => void) => { listeners.add(listener); return () => listeners.delete(listener); };
     const notifyError = (error: unknown) => {
         console.error("[ExcordFavorites] Could not load or save favorites", error);
-        common.Toasts.show({ message: "Favorites could not be loaded or saved. Reload Excord to try again.", id: "excord-favorites-storage", type: common.Toasts.Type.FAILURE });
+        common.showToast("Favorites could not be loaded or saved. Reload Excord to try again.", "failure");
     };
     const repository = new FavoritesRepository(dataStore, emit, notifyError);
     const useFavorites = () => { common.React.useSyncExternalStore(subscribe, () => revision); return repository.data; };
@@ -102,7 +102,7 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
             if (!NativeCategory) throw new Error("Discord's category component was not found");
         } catch (error) {
             console.error("[ExcordFavorites] Native category UI unavailable", error);
-            common.Toasts.show({ message: "Favorites is unavailable in this Discord build. Your saved favorites are preserved.", id: "excord-favorites-ui", type: common.Toasts.Type.FAILURE });
+            common.showToast("Favorites is unavailable in this Discord build. Your saved favorites are preserved.", "failure");
             return;
         }
         if (request !== opening || !running || accountId !== repository.accountId || !repository.ready) return;
@@ -271,7 +271,7 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
         return running && active && repository.ready
             ? <ErrorBoundary fallback={() => fallback()} onError={() => {
                 setActive(false);
-                common.Toasts.show({ message: "Favorites is unavailable in this Discord build. Your saved favorites are preserved.", id: "excord-favorites-ui", type: common.Toasts.Type.FAILURE });
+                common.showToast("Favorites is unavailable in this Discord build. Your saved favorites are preserved.", "failure");
             }}><FavoritesView /></ErrorBoundary>
             : fallback();
     }
@@ -320,7 +320,7 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
                 replace: "$1$2=$self.useRailProps($2);"
             }
         }, {
-            find: '"organize-by-topic"',
+            find: categoryMatch,
             replacement: { match: categoryMatch, replace: adaptCategory }
         }],
         contextMenus: Object.fromEntries(["channel-context", "thread-context", "user-context", "gdm-context"].map(id => [id, contextMenuPatch])),
