@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      favorites_dev_release:
+        description: Publish Favorites test ZIPs as DEV DO NOT INSTALL
+        type: boolean
+        default: false
   workflow_call:
 
 permissions:
@@ -114,3 +119,56 @@ jobs:
             dist/*.blockmap
           if-no-files-found: error
           retention-days: 14
+
+  favorites-dev-release:
+    name: Publish Favorites development ZIPs
+    if: github.event_name == 'workflow_dispatch' && inputs.favorites_dev_release && github.ref == 'refs/heads/feat/excord-favorites'
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: excord-*
+          path: artifacts
+          merge-multiple: true
+      - name: Prepare ZIP-only test release
+        shell: bash
+        run: |
+          mkdir publish
+          for platform in mac-arm64 win-x64; do
+            archives=(artifacts/*-"$platform".zip)
+            if [[ ${#archives[@]} != 1 || ! -f "${archives[0]}" ]]; then
+              echo "Expected exactly one ZIP for $platform" >&2
+              exit 1
+            fi
+            cp "${archives[0]}" "publish/ExcordFavorites-DEV-DO-NOT-INSTALL-$platform.zip"
+          done
+          cp scripts/favorites-dev-launch.command scripts/favorites-dev-launch.cmd publish/
+          cp docs/favorites.md publish/TESTING.md
+          git archive --format=tar.gz --prefix=excord/ --output=publish/Excord-source.tar.gz HEAD
+          (cd publish && sha256sum * > SHA256SUMS)
+          printf 'Commit: %s\n\n' "$GITHUB_SHA" > release-notes.md
+          cat >> release-notes.md <<'EOF'
+          # DEV DO NOT INSTALL - ExcordFavorites
+
+          Branch test build. Native build and packaged smoke checks passed on macOS Apple silicon and Windows x64. Signed-in Favorites behavior still needs manual testing before merge.
+
+          Download your platform's ZIP and matching launcher. Quit installed Excord completely, extract the ZIP into a test folder, and put the launcher beside Excord.app or excord.exe. Do not move the app into Applications or run an installer.
+
+          On Mac, run `bash favorites-dev-launch.command` from Terminal in that folder. On Windows, double-click favorites-dev-launch.cmd. The launcher uses a separate excord-favorites-dev profile, so sign in again. Quit the test app before reopening installed Excord. Do not install updates from the test build.
+
+          Quick check: add channels from two servers plus a DM, group DM, forum, thread, and voice channel; visit them while Favorites stays open; drag entries and categories; restart and check persistence; receive messages and mentions and compare badges with the original channels; check mute behavior; disable/re-enable the plugin. See TESTING.md for the full checklist.
+
+          The app version matches the main-branch base. Identify this build by its commit and release tag. No installers or updater metadata are attached, and the dev tag is outside the normal update feed.
+          EOF
+      - name: Publish development prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          tag="dev-do-not-install-favorites-${GITHUB_SHA:0:12}"
+          gh release create "$tag" publish/* --target "$GITHUB_SHA" --draft --prerelease --title "DEV DO NOT INSTALL - ExcordFavorites" --notes-file release-notes.md
+          gh release edit "$tag" --draft=false --prerelease --latest=false
