@@ -115,6 +115,10 @@ test("sidebar patch replaces only the channel-list body, retaining rail, panels,
     expect(patched).toContain('$self.renderSidebar(()=>(0,r.jsx)(NativeChannelList,{}))');
     expect(patched).toContain('"aria-label":"Resize Sidebar"');
     expect(patched).toContain("}),panels]");
+    const railPatch = plugin.patches[2];
+    const railFind = new RegExp(railPatch.find.source.replaceAll("\\i", "[A-Za-z_$][\\w$]*"));
+    expect(railFind.test('function Rail(props){let a,b,{backgroundStyle:style="always",children:child,icon:icon,name:name,ariaLabel:label}=props}')).toBe(true);
+    expect(railFind.test('function Marketing(props){let{backgroundAsset:asset,backgroundStyle:style,shouldApplyFade:fade}=props}')).toBe(false);
 });
 
 test("rail reads current unread/mention state, observes notification stores, and omits inaccessible favorites", async () => {

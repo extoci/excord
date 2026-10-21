@@ -283,7 +283,7 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
                 replace: "$1$2=$self.useRailProps($2);"
             }
         }, {
-            find: "backgroundStyle:",
+            find: /backgroundStyle:\i="always",children:\i,icon:\i,name:\i,ariaLabel:/,
             replacement: {
                 match: /(function \i\((\i)\)\{)(?=let \i,\i,\{backgroundStyle:)/,
                 replace: "$1$2=$self.useRailProps($2);"
