@@ -6,6 +6,8 @@ import vm from "node:vm";
 
 import { optimizePatcher } from "../scripts/build/optimizePatcher.mts";
 import { PatchPrefilter } from "../src/excord/patchPrefilter";
+import { createFavoritesPlugin } from "../src/excord/favorites";
+import { factory as categoryFactory } from "./favorites-category-fixture";
 
 test("the prefilter sees additions, replacements and regex state without consuming matches", () => {
   const filter = new PatchPrefilter();
@@ -68,7 +70,7 @@ interface Patch {
   find: string | RegExp;
   replacement: {
     match: string | RegExp;
-    replace: string;
+    replace: string | ((...args: any[]) => string);
     fromBuild?: number;
     toBuild?: number;
   }[];
@@ -81,6 +83,7 @@ interface Patch {
 interface Harness {
   regexp(source: string, flags: string): RegExp;
   patches: Patch[];
+  setFavoriteBridge(bridge: unknown): void;
   patchFactory(
     id: number,
     factory: (...args: any[]) => unknown,
@@ -111,7 +114,7 @@ beforeAll(async () => {
       ).replace(/^import .+;$/gm, (line) =>
         line.includes("PatchPrefilter") ? line : "",
       ) +
-      "\nexport { patchFactory };export const regexp = (source, flags) => new RegExp(source, flags);\n";
+      "\nexport { patchFactory };export const regexp = (source, flags) => new RegExp(source, flags); export const setFavoriteBridge = bridge => globalThis.favoriteBridge = bridge;\n";
     const result = await build({
       stdin: {
         contents: `
@@ -140,6 +143,7 @@ ${contents}`,
     vm.runInNewContext(result.outputFiles[0].text, {
       module,
       exports: module.exports,
+      memo: (component: unknown) => component,
     });
     return module.exports as Harness;
   }
@@ -235,5 +239,32 @@ test("the optimized patcher preserves ordering, consumption, ranges, and failed 
       };
     });
     expect(results[1]).toEqual(results[0]);
+  }
+});
+
+test("Favorites captures the real category after tutorial modules through the production patcher", () => {
+  const dummy = () => () => null;
+  const plugin = createFavoritesPlugin({
+    "@webpack/common": {}, "@api/ServerList": {}, "@api/DataStore": {}, "@components/ErrorBoundary": { default: dummy },
+    "@webpack": { extractAndLoadChunksLazy: dummy, filters: { byCode: dummy }, findComponentByCodeLazy: dummy, findByCodeLazy: dummy, findByPropsLazy: dummy, mapMangledModuleLazy: dummy, findCssClassesLazy: dummy }
+  });
+  const patch = plugin.patches[3];
+  const canonical = (regex: RegExp) => new RegExp(regex.source.replaceAll("\\i", "[A-Za-z_$][\\w$]*"));
+  for (const harness of [original, optimized]) {
+    let captured: unknown;
+    harness.patches.splice(0);
+    harness.setFavoriteBridge({ captureCategory(component: unknown) { captured = component; return component; } });
+    harness.patches.push({ plugin: "ExcordFavorites", find: typeof patch.find === "string" ? patch.find : canonical(patch.find), replacement: [{
+      match: canonical(patch.replacement.match),
+      replace: (...args: any[]) => patch.replacement.replace(args[0], args[1]).replaceAll("$self", "globalThis.favoriteBridge")
+    }] });
+    const tutorial = function tutorial() { return { "organize-by-topic": { prerequisites: [] } }; };
+    harness.patchFactory(1, tutorial)();
+    expect(captured).toBeUndefined();
+    const native = vm.runInNewContext(`(${categoryFactory})`, { memo: (component: unknown) => component });
+    harness.patchFactory(2, native)();
+    expect(typeof captured).toBe("function");
+    expect(harness.patches).toHaveLength(0);
+    harness.setFavoriteBridge(undefined);
   }
 });

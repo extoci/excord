@@ -70,6 +70,34 @@ try {
         hasPatch: Vencord.WebpackPatcher.patches.some((patch: { plugin: string }) => patch.plugin === "ExcordRefreshProbe")
     }));
     assert.equal(initial.native, "object");
+    assert.equal(await page.evaluate(() => {
+        const plugin = Vencord.Plugins.plugins.ExcordFavorites;
+        return !!plugin && plugin.enabledByDefault === true
+            && typeof plugin.renderSidebar === "function"
+            && plugin.dependencies?.includes("ServerListAPI");
+    }), true, "Favorites must register with the native sidebar integration and ServerListAPI dependency");
+    const favoritesUI = await page.evaluate(async () => {
+        const webpack = ExcordModules["@webpack"] as typeof import("@equicord/types/webpack");
+        const favorites = Vencord.Plugins.plugins.ExcordFavorites;
+        const originalCapture = favorites.captureCategory;
+        let captured = 0;
+        favorites.captureCategory = component => { captured++; return originalCapture(component); };
+        try {
+            // Signed-out startup does not load the guild route. Load its real
+            // chunks; never inject a category stub. The category-specific
+            // matcher means an unrelated tutorial module cannot consume the
+            // patch, which unit tests exercise with the real patcher.
+            const loaded = await webpack.extractAndLoadChunks(['name:"GuildSidebar"'], /createPromise:\(\)=>Promise\.all\(\[([^\]]+)\]\)\.then\(\i\.bind\(\i,(\d+)\)\),webpackId:\d+,name:"GuildSidebar"/);
+            return { loaded, captured };
+        } finally {
+            favorites.captureCategory = originalCapture;
+        }
+    });
+    assert.equal(favoritesUI.loaded, true, "Discord's guild sidebar chunks must load");
+    assert.ok(favoritesUI.captured > 0, "The production category patch must capture Discord's real component");
+    console.log("[smoke] Favorites captured Discord's real native category component");
+    assert.equal(await page.evaluate(() => Object.hasOwn(Vencord.Plugins.plugins, "ExcordVisualizations")), true,
+        "Favorites must coexist with the Visualizations plugin");
     assert.equal(await page.evaluate(() => Vencord.Plugins.isPluginEnabled("ExcordVisualizations")), false,
         "HTML visualizations must be opt-in on fresh profiles");
     assert.equal(await page.evaluate(() => Vencord.Plugins.plugins.ExcordVisualizations.enabledByDefault), false);
