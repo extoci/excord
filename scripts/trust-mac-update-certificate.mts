@@ -16,13 +16,15 @@ try {
     const archive = join(directory, "identity.p12");
     await writeFile(archive, Buffer.from(process.env.CSC_LINK, "base64"), { mode: 0o600 });
     const certificate = join(process.env.RUNNER_TEMP, "excord-update-certificate.pem");
-    execFileSync("openssl", ["pkcs12", "-in", archive, "-clcerts", "-nokeys", "-passin", "env:CSC_KEY_PASSWORD", "-out", certificate], { stdio: "pipe" });
+    execFileSync("openssl", ["pkcs12", "-in", archive, "-clcerts", "-nokeys", "-passin", "env:CSC_KEY_PASSWORD", "-out", certificate], { stdio: "pipe", timeout: 30000 });
     const identity = new X509Certificate(await readFile(certificate));
     assert.ok(identity.subject.split("\n").includes("CN=Excord Updates"), "The certificate must identify Excord Updates");
     // electron-builder imports the private key into its temporary keychain.
     // Trust the public certificate first so security find-identity can select it.
-    const keychain = execFileSync("security", ["default-keychain", "-d", "user"], { encoding: "utf8" }).trim().replace(/^"|"$/g, "");
-    execFileSync("security", ["add-trusted-cert", "-r", "trustRoot", "-p", "codeSign", "-k", keychain, certificate], { stdio: "pipe" });
+    // User trust settings can open an authorization dialog on a headless runner.
+    // Admin trust with noninteractive sudo avoids that dialog on disposable CI.
+    console.log("[signing] Trusting the public certificate on the disposable runner");
+    execFileSync("sudo", ["-n", "security", "add-trusted-cert", "-d", "-r", "trustRoot", "-p", "codeSign", "-k", "/Library/Keychains/System.keychain", certificate], { stdio: "pipe", timeout: 30000 });
 } finally {
     await rm(directory, { recursive: true, force: true });
 }

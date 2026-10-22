@@ -42,6 +42,6 @@ Updates use one public GitHub Releases track with explicit latest-channel metada
 
 ## Release boundaries
 
-The repository is currently private at github.com/extoci/excord. Do not change its visibility without the user's instruction. Native build workflows upload private CI artifacts. Tag releases and the manual draft workflow use GitHub Releases and electron-updater metadata. The project does not host a plugin catalog or an update server. See `docs/releases.md` for release steps and signing limits.
+The repository is public at github.com/extoci/excord. Do not change its visibility without the user's instruction. Tag releases and the manual draft workflow use GitHub Releases and electron-updater metadata. The project does not host a plugin catalog or an update server. See `docs/releases.md` for release steps and signing limits.
 
 Never describe every plugin or voice/screen-share behavior as verified merely because the catalog builds. Live account behavior and physical device permissions need separate tests. Current retained upstream mechanisms and known costs belong in the compatibility record.

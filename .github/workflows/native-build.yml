@@ -6,6 +6,10 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
+      sign_macos:
+        description: Verify release packaging with the persistent Mac signing certificate
+        type: boolean
+        default: false
       favorites_dev_release:
         description: Publish Favorites test ZIPs as DEV DO NOT INSTALL
         type: boolean
@@ -62,6 +66,7 @@ jobs:
       - run: node node_modules/electron/install.js
       - name: Verify self-signed Mac update compatibility without Apple credentials
         if: matrix.platform == 'mac'
+        timeout-minutes: 2
         run: node --import tsx scripts/mac-update-signing-smoke.mts
       - run: bun run check
       - run: bun run typecheck:reference

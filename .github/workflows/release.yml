@@ -72,7 +72,9 @@ jobs:
           RELEASE_DRAFT: ${{ steps.release.outputs.draft }}
         shell: bash
         run: |
-          args=("$RELEASE_TAG" --title "Excord $RELEASE_TAG" --generate-notes --target "$GITHUB_SHA")
+          args=("$RELEASE_TAG" --title "Excord $RELEASE_TAG" --target "$GITHUB_SHA")
+          notes="docs/release-notes/${RELEASE_TAG#v}.md"
+          if [[ -f "$notes" ]]; then args+=(--notes-file "$notes"); else args+=(--generate-notes); fi
           if [[ "$RELEASE_DRAFT" == true ]]; then args+=(--draft); fi
           if [[ "$RELEASE_TAG" == *-* ]]; then args+=(--prerelease); fi
           gh release create "${args[@]}" release/*

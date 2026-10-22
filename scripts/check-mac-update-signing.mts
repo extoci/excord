@@ -17,7 +17,7 @@ function signature(appPath: string) {
 }
 const details = signature(app);
 assert.match(details, /^Authority=Excord Updates$/m, "Release updates need the persistent certificate, not ad-hoc signing");
-const requirement = details.match(/^designated => (.+)$/m)?.[1];
+const requirement = details.match(/^(?:#\s*)?designated => (.+)$/m)?.[1];
 assert.ok(requirement && !/\bcdhash\b/.test(requirement), "The update signing requirement must survive changes to the app's contents");
 execFileSync("codesign", ["--verify", "--deep", "--strict", app]);
 
@@ -25,7 +25,7 @@ execFileSync("codesign", ["--verify", "--deep", "--strict", app]);
 // only `codesign --verify` permits two individually valid but incompatible apps.
 // An optional previous signed app exercises the actual cross-version requirement.
 const previous = process.argv[2] ? resolve(process.argv[2]) : app;
-const previousRequirement = signature(previous).match(/^designated => (.+)$/m)?.[1];
+const previousRequirement = signature(previous).match(/^(?:#\s*)?designated => (.+)$/m)?.[1];
 assert.ok(previousRequirement, "The previous app must have a designated requirement");
 const metadata = load(await readFile("dist/latest-mac.yml", "utf8")) as { files: { url: string; }[]; };
 const zip = metadata.files.find(file => file.url.endsWith(".zip"))?.url;
@@ -34,12 +34,14 @@ const directory = await mkdtemp(join(tmpdir(), "excord-update-signature-"));
 try {
     assert.ok(process.env.EXCORD_MAC_SIGNING_CERTIFICATE, "The expected public signing certificate must be provided");
     const expectedCertificate = new X509Certificate(await readFile(process.env.EXCORD_MAC_SIGNING_CERTIFICATE));
+    const pinnedFingerprint = (await readFile("build/mac-update-certificate.sha256", "utf8")).trim();
+    assert.equal(expectedCertificate.fingerprint256, pinnedFingerprint, "Release signing must retain the pinned identity across versions");
     const prefix = join(directory, "signer-");
-    execFileSync("codesign", ["--display", "--extract-certificates", prefix, app]);
+    execFileSync("codesign", ["--display", `--extract-certificates=${prefix}`, app]);
     const actualCertificate = new X509Certificate(await readFile(`${prefix}0`));
     assert.equal(actualCertificate.fingerprint256, expectedCertificate.fingerprint256, "The app must use the configured release certificate");
     execFileSync("ditto", ["-x", "-k", resolve("dist", decodeURIComponent(zip)), directory]);
-    execFileSync("codesign", ["--verify", "--deep", "--strict", "--test-requirement", previousRequirement, join(directory, "Excord.app")]);
+    execFileSync("codesign", ["--verify", "--deep", "--strict", "--test-requirement", `=${previousRequirement}`, join(directory, "Excord.app")]);
 } finally {
     await rm(directory, { recursive: true, force: true });
 }

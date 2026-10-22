@@ -2,7 +2,7 @@
 
 Excord uses GitHub Actions, GitHub Releases, and electron-updater. The desktop app and its pinned Equicord catalog ship together. There is no Excord-hosted catalog or update server.
 
-Distribution is intended to use public GitHub Releases. Until the owner makes the repository public, unauthenticated update checks cannot access it and fail quietly in Settings. Do not change repository visibility as part of packaging or embed a GitHub token in the app.
+Distribution uses public GitHub Releases. The repository is public, so update checks need no GitHub token. Do not change repository visibility as part of packaging or embed a token in the app.
 
 ## Native build artifacts
 
@@ -28,6 +28,8 @@ To prepare a private draft, run the Release workflow manually from GitHub Action
 
 For a published release, update package.json and the lockfile, commit the version change, then push the matching `vX.Y.Z` tag. The release workflow builds the tagged source, uploads the installers and updater metadata, and generates release notes. A tag containing a suffix creates a prerelease.
 
+Use `0.0.1-alpha.1`, followed by `0.0.1-alpha.2`, for the new alpha series. The numeric final identifier preserves SemVer ordering after alpha 9. Bun's current lockfile does not store the root package version; verify it with `bun install --frozen-lockfile` after changing package.json. A matching `docs/release-notes/<version>.md` supplies the release notes when present. Before merging a release candidate, run Native builds on its branch with `sign_macos=true` to verify the same signed packaging path without publishing or tagging a release.
+
 Version tags and package.json must match. Do not move an existing release tag to different source code. Record the bundled Equicord revision in the release notes whenever it changes.
 
 ## Signing and live feature checks
@@ -46,6 +48,8 @@ After the repository owner approves GitHub changes, configure these private Acti
 | `CSC_KEY_PASSWORD` | Contents of `password.txt` |
 
 No Apple account credentials are needed. On a Mac, the same self-signed code-signing identity can also be created with Keychain Access's Certificate Assistant and exported as an encrypted `.p12`. Use the certificate name `Excord Updates`.
+
+`build/mac-update-certificate.sha256` pins the release certificate's public fingerprint. It must match the configured certificate. Do not replace this fingerprint as part of normal releases; changing the certificate breaks trust with installed versions and requires a planned manual migration.
 
 Release checks the two inputs before building. The Mac release packaging step trusts the public certificate on its disposable runner, then electron-builder imports the private key into a temporary signing keychain. `scripts/build/mac-release.cjs` selects that identity instead of the development ad-hoc signature. Missing credentials or an unavailable signing identity fail the release. Pull requests use no release secrets. `scripts/trust-mac-update-certificate.mts` is restricted to disposable Mac CI runners; people installing Excord do not need to import or trust the signing certificate in Keychain Access.
 

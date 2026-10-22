@@ -12,6 +12,8 @@ Excord's defaults are opinionated, using the mindset of "go away and let me do m
 
 Get it from the [releases page](https://github.com/extoci/excord/releases).
 
+Oh, and, if you run into random macOS Gatekeeper warnings, it's because I'm broke and don't wanna sign Excord with the Apple Developer Certificate thing. Point your clankers at the repo and ask if it's malicious if you don't trust me.
+
 ## The slop line
 
 Everything below here was written by agents.
