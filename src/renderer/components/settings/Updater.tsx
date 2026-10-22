@@ -39,6 +39,7 @@ export function Updater() {
             {state?.phase === "downloading" && `Downloading ${state.version}… ${Math.floor(state.progress)}%`}
             {state?.phase === "ready" && (state.installOnQuit ? "The update will install when you quit Excord. It won’t reopen the app." : `Update ${state.version} is ready.`)}
             {state?.phase === "installing" && "Installing update…"}
+            {state?.phase === "manual" && `Update ${state.version} needs a manual installation.`}
         </div>
         {(error || state?.error) && <Paragraph>{error || state?.error}</Paragraph>}
         {state?.phase === "downloading" && <progress aria-label="Update download" max={100} value={state.progress} />}

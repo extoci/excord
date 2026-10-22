@@ -6,11 +6,25 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
+      sign_macos:
+        description: Verify release packaging with the persistent Mac signing certificate
+        type: boolean
+        default: false
       favorites_dev_release:
         description: Publish Favorites test ZIPs as DEV DO NOT INSTALL
         type: boolean
         default: false
   workflow_call:
+    inputs:
+      sign_macos:
+        description: Require the persistent self-signed certificate for release artifacts
+        type: boolean
+        default: false
+    secrets:
+      CSC_LINK:
+        required: false
+      CSC_KEY_PASSWORD:
+        required: false
 
 permissions:
   contents: read
@@ -38,7 +52,7 @@ jobs:
     timeout-minutes: 25
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: "false"
-      # Ad-hoc signing uses no certificate or signing secret, including on PRs.
+      # Development builds use ad-hoc signing without secrets, including on PRs.
       CSC_FOR_PULL_REQUEST: "true"
     steps:
       - uses: actions/checkout@v4
@@ -50,6 +64,10 @@ jobs:
           bun-version: "1.4.0"
       - run: bun install --frozen-lockfile
       - run: node node_modules/electron/install.js
+      - name: Verify self-signed Mac update compatibility without Apple credentials
+        if: matrix.platform == 'mac'
+        timeout-minutes: 2
+        run: node --import tsx scripts/mac-update-signing-smoke.mts
       - run: bun run check
       - run: bun run typecheck:reference
       - run: bun run build
@@ -59,9 +77,24 @@ jobs:
       - name: Exercise the RPC worker
         run: bun run test:rpc
       - name: Build installer and archive
+        if: matrix.platform != 'mac' || !inputs.sign_macos
         run: bun x electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --publish never
+      - name: Build signed Mac release installer and archive
+        if: matrix.platform == 'mac' && inputs.sign_macos
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "true"
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: |
+          node --import tsx scripts/trust-mac-update-certificate.mts
+          bun x electron-builder --mac --arm64 --publish never --config scripts/build/mac-release.cjs
       - name: Verify single-track updater metadata
         run: node --import tsx scripts/check-update-metadata.mts
+      - name: Verify Mac release update signing compatibility
+        if: matrix.platform == 'mac' && inputs.sign_macos
+        env:
+          EXCORD_MAC_SIGNING_CERTIFICATE: ${{ runner.temp }}/excord-update-certificate.pem
+        run: node --import tsx scripts/check-mac-update-signing.mts
       - name: Exercise the packaged application archive
         run: bun run check:package
       - uses: actions/upload-artifact@v4

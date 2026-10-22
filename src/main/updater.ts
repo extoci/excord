@@ -53,7 +53,7 @@ export const updates = new UpdateController({
 });
 autoUpdater.on("download-progress", progress => updates.progress(progress.percent));
 // Check/download errors reject their operation promises. Install errors arrive as events.
-autoUpdater.on("error", () => updates.installFailed());
+autoUpdater.on("error", error => updates.installFailed(error));
 
 let timer: ReturnType<typeof setTimeout> | undefined;
 AppEvents.once("appLoaded", () => {

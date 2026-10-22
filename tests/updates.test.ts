@@ -45,6 +45,37 @@ test("explicit restart reopens and installation errors disarm consent", async ()
     expect(controller.snapshot().phase).toBe("ready"); expect(controller.snapshot().installOnQuit).toBe(false);
     expect(controller.snapshot().error).toContain("Couldn’t install");
 });
+function signatureRejection() {
+    // Native alpha3 -> alpha4 failure, with the user's filesystem path removed.
+    return Object.assign(Error("Code signature at URL file:///redacted/Excord.app/ did not pass validation: code failed to satisfy specified code requirement(s)"), {
+        code: -1, domain: "SQRLCodeSignatureErrorDomain"
+    });
+}
+test("a native signing rejection requires manual installation instead of retrying the same package", async () => {
+    const { controller, pending, calls } = harness();
+    await controller.action("check"); pending.resolve(); await controller.action("download");
+    await controller.action("install-on-quit"); controller.install(false);
+    controller.installFailed(signatureRejection());
+    expect(controller.snapshot().phase).toBe("manual");
+    expect(controller.snapshot().installOnQuit).toBe(false);
+    expect(controller.snapshot().error).toContain("signing identity");
+    expect(controller.snapshot().error).toContain("Applications");
+    expect(controller.snapshot().error).not.toContain("file://");
+    await controller.action("restart"); await controller.action("install-on-quit");
+    expect(controller.install(false)).toBe(false);
+    expect(calls.installs).toEqual([false]);
+});
+test("synchronous install and download signing failures use the same manual recovery", async () => {
+    const synchronous = harness();
+    await synchronous.controller.check(); synchronous.pending.resolve(); await synchronous.controller.action("download");
+    synchronous.driver.install = () => { throw signatureRejection(); };
+    await synchronous.controller.action("restart");
+    expect(synchronous.controller.snapshot().phase).toBe("manual");
+
+    const download = harness();
+    await download.controller.check(); download.pending.reject(signatureRejection()); await download.controller.action("download");
+    expect(download.controller.snapshot().phase).toBe("manual");
+});
 test("cancelling an active download preserves the app and permits retry", async () => {
     const { controller, calls } = harness(); await controller.action("check");
     const operation = controller.action("download"); await Promise.resolve(); await Promise.resolve();

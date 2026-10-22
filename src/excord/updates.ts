@@ -2,7 +2,7 @@ export type UpdateAction = "check" | "download" | "cancel" | "install-on-quit" |
 export interface UpdateSnapshot {
     revision: number;
     currentVersion: string;
-    phase: "idle" | "checking" | "available" | "downloading" | "ready" | "installing" | "unsupported";
+    phase: "idle" | "checking" | "available" | "downloading" | "ready" | "installing" | "manual" | "unsupported";
     version?: string;
     notes?: string;
     progress: number;
@@ -17,6 +17,10 @@ export interface UpdateDriver {
     install(relaunch: boolean): void;
 }
 export const UPDATE_CHECK_INTERVAL = 24 * 60 * 60 * 1000;
+
+function isSignatureRejection(error: unknown): boolean {
+    return error != null && typeof error === "object" && "domain" in error && error.domain === "SQRLCodeSignatureErrorDomain";
+}
 
 /** Owns consent and operation ordering. No window, notification, or startup dependency. */
 export class UpdateController {
@@ -74,19 +78,26 @@ export class UpdateController {
         this.set({ phase: "downloading", progress: 0, error: undefined, installOnQuit: false });
         this.downloading = Promise.resolve().then(() => this.cancelled ? undefined : this.driver.download()).then(() => {
             this.set({ phase: this.cancelled ? "available" : "ready", progress: this.cancelled ? 0 : 100 });
-        }).catch(() => {
-            this.set({ phase: "available", progress: 0, error: this.cancelled ? undefined : "Couldn’t download the update. Your current version is still running." });
+        }).catch(error => {
+            if (!this.cancelled && isSignatureRejection(error)) this.requireManualInstall();
+            else this.set({ phase: "available", progress: 0, error: this.cancelled ? undefined : "Couldn’t download the update. Your current version is still running." });
         }).finally(() => { this.downloading = undefined; });
         return this.downloading;
     }
     install(relaunch: boolean): boolean {
         if (this.state.phase !== "ready" || (!relaunch && !this.state.installOnQuit)) return false;
         this.set({ phase: "installing", installOnQuit: false, error: undefined });
-        try { this.driver.install(relaunch); } catch { this.installFailed(); }
+        try { this.driver.install(relaunch); } catch (error) { this.installFailed(error); }
         return true;
     }
-    installFailed() {
-        if (this.state.phase === "installing")
+    installFailed(error?: unknown) {
+        if (this.state.phase !== "installing") return;
+        if (isSignatureRejection(error)) this.requireManualInstall();
+        else
             this.set({ phase: "ready", installOnQuit: false, error: "Couldn’t install the update. You can retry or download an installer from Releases." });
+    }
+    private requireManualInstall() {
+        this.set({ phase: "manual", installOnQuit: false, progress: 0,
+            error: "macOS rejected the update's signing identity. Download the installer from Releases, quit Excord, and replace the app in Applications. Retrying this package won't fix its signature." });
     }
 }
