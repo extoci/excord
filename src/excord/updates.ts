@@ -28,10 +28,22 @@ export class UpdateController {
     private checking?: Promise<void>;
     private downloading?: Promise<void>;
     private cancelled = false;
+    private automaticDownloads = false;
+    private resumeAutomaticDownload = false;
     constructor(private driver: UpdateDriver, version: string, supported: boolean,
         private publish: (state: UpdateSnapshot) => void, lastCheckedAt?: number,
         private checked: (time: number) => void = () => {}, private now = Date.now) {
         this.state = { revision: 0, currentVersion: version, phase: supported ? "idle" : "unsupported", progress: 0, installOnQuit: false, lastCheckedAt };
+    }
+    setAutomaticDownloads(enabled: boolean) {
+        this.automaticDownloads = enabled;
+        this.resumeAutomaticDownload = enabled && this.cancelled && this.state.phase === "downloading";
+        if (!enabled && this.state.phase === "downloading") {
+            this.cancelled = true;
+            this.driver.cancel();
+        } else if (enabled && this.state.phase === "available") {
+            void this.download();
+        }
     }
     snapshot(): UpdateSnapshot { return { ...this.state }; }
     private set(update: Partial<UpdateSnapshot>) {
@@ -43,6 +55,7 @@ export class UpdateController {
             case "check": return this.check();
             case "download": return this.download();
             case "cancel":
+                this.resumeAutomaticDownload = false;
                 if (this.state.phase === "downloading") { this.cancelled = true; this.driver.cancel(); }
                 return;
             case "install-on-quit":
@@ -60,8 +73,9 @@ export class UpdateController {
         const lastCheckedAt = this.now();
         try { this.checked(lastCheckedAt); } catch { /* A read-only profile must not break updates. */ }
         this.set({ phase: "checking", error: undefined, lastCheckedAt });
-        this.checking = Promise.resolve().then(() => this.driver.check()).then(update => {
+        this.checking = Promise.resolve().then(() => this.driver.check()).then(async update => {
             this.set({ phase: update ? "available" : "idle", version: update?.version, notes: update?.notes, progress: 0 });
+            if (update && this.automaticDownloads) await this.download();
         }).catch(() => {
             this.set({ phase: "idle", version: undefined, notes: undefined, error: "Couldn’t check for updates. Try again when you’re connected." });
         }).finally(() => { this.checking = undefined; });
@@ -75,13 +89,20 @@ export class UpdateController {
         if (this.downloading) return this.downloading;
         if (this.state.phase !== "available") return;
         this.cancelled = false;
+        this.resumeAutomaticDownload = false;
         this.set({ phase: "downloading", progress: 0, error: undefined, installOnQuit: false });
         this.downloading = Promise.resolve().then(() => this.cancelled ? undefined : this.driver.download()).then(() => {
             this.set({ phase: this.cancelled ? "available" : "ready", progress: this.cancelled ? 0 : 100 });
         }).catch(error => {
             if (!this.cancelled && isSignatureRejection(error)) this.requireManualInstall();
             else this.set({ phase: "available", progress: 0, error: this.cancelled ? undefined : "Couldn’t download the update. Your current version is still running." });
-        }).finally(() => { this.downloading = undefined; });
+        }).finally(() => {
+            this.downloading = undefined;
+            if (this.resumeAutomaticDownload && this.automaticDownloads && this.state.phase === "available") {
+                this.resumeAutomaticDownload = false;
+                void this.download();
+            }
+        });
         return this.downloading;
     }
     install(relaunch: boolean): boolean {

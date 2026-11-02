@@ -106,3 +106,85 @@ test("feed resolver uses the immutable published release directory", async () =>
     expect(await resolveUpdateFeed(request)).toBe("https://github.com/extoci/excord/releases/download/v0.0.0-alpha1/");
     await expect(resolveUpdateFeed((async () => Response.json([])) as typeof fetch)).rejects.toThrow("No update release");
 });
+
+test("automatic downloads stop at ready and never install without a restart action", async () => {
+    const { controller, calls, pending } = harness();
+    controller.setAutomaticDownloads(true);
+    pending.resolve();
+    await controller.check(true);
+    expect(calls.downloads).toBe(1);
+    expect(controller.snapshot().phase).toBe("ready");
+    expect(controller.snapshot().installOnQuit).toBe(false);
+    expect(controller.install(false)).toBe(false);
+    expect(calls.installs).toEqual([]);
+    await controller.action("restart");
+    expect(calls.installs).toEqual([true]);
+});
+test("turning off automatic downloads preserves checks and manual downloading", async () => {
+    const { controller, calls, pending } = harness();
+    controller.setAutomaticDownloads(true);
+    controller.setAutomaticDownloads(false);
+    await controller.check(true);
+    expect(calls.checks).toBe(1);
+    expect(calls.downloads).toBe(0);
+    expect(controller.snapshot().phase).toBe("available");
+    pending.resolve();
+    await controller.action("download");
+    expect(controller.snapshot().phase).toBe("ready");
+});
+test("turning off during a check prevents its pending automatic download", async () => {
+    const { controller, driver, calls } = harness();
+    const pending = deferred();
+    driver.check = async () => { calls.checks++; await pending.promise; return { version: "0.0.1-alpha.1" }; };
+    controller.setAutomaticDownloads(true);
+    const checking = controller.check(true);
+    controller.setAutomaticDownloads(false);
+    pending.resolve();
+    await checking;
+    expect(calls.downloads).toBe(0);
+});
+test("turning off cancels an active download and prevents the queued request from starting", async () => {
+    const active = harness();
+    await active.controller.check();
+    const downloading = active.controller.action("download");
+    await Promise.resolve(); await Promise.resolve();
+    active.controller.setAutomaticDownloads(false);
+    await downloading;
+    expect(active.calls.cancelled).toBe(1);
+    expect(active.controller.snapshot().phase).toBe("available");
+    expect(active.calls.installs).toEqual([]);
+
+    const queued = harness();
+    await queued.controller.check();
+    const operation = queued.controller.action("download");
+    queued.controller.setAutomaticDownloads(false);
+    await operation;
+    expect(queued.calls.downloads).toBe(0);
+});
+test("enabling automatic downloads starts an already available update", async () => {
+    const { controller, calls, pending } = harness();
+    await controller.check();
+    pending.resolve();
+    controller.setAutomaticDownloads(true);
+    await controller.action("download");
+    expect(calls.downloads).toBe(1);
+    expect(controller.snapshot().phase).toBe("ready");
+});
+test("off then on resumes after cancellation, while explicit Cancel stays cancelled", async () => {
+    for (const cancelExplicitly of [false, true]) {
+        const { controller, driver, calls, pending } = harness();
+        driver.download = async () => { calls.downloads++; if (calls.downloads === 1) await pending.promise; };
+        controller.setAutomaticDownloads(true);
+        const operation = controller.check(true);
+        // Wait until the driver's first request starts, with no real timers or network.
+        for (let step = 0; step < 10 && !calls.downloads; step++) await Promise.resolve();
+        expect(calls.downloads).toBe(1);
+        controller.setAutomaticDownloads(false);
+        controller.setAutomaticDownloads(true);
+        if (cancelExplicitly) await controller.action("cancel");
+        await operation;
+        if (!cancelExplicitly) await controller.action("download");
+        expect(calls.downloads).toBe(cancelExplicitly ? 1 : 2);
+        expect(controller.snapshot().phase).toBe(cancelExplicitly ? "available" : "ready");
+    }
+});
