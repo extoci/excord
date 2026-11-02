@@ -46,6 +46,7 @@ import { attachExcord, prepareLocalPlugins, refreshExcord } from "../excord/serv
 import { isSafeMode } from "../excord/mode";
 import { exportDiagnostics, openProfileFolder, recordRecoveryEvent, restartExcord } from "./recovery";
 import { attachBackgroundPolicy } from "./background";
+import { restoreWindowMaximized, trackWindowState } from "./windowState";
 
 let isQuitting = false;
 
@@ -217,27 +218,6 @@ function initMenuBar(win: BrowserWindow) {
     const menu = Menu.buildFromTemplate(menuItems.filter(isTruthy));
 
     Menu.setApplicationMenu(menu);
-}
-
-function initWindowBoundsListeners(win: BrowserWindow) {
-    const saveState = () => {
-        State.store.maximized = win.isMaximized();
-        State.store.minimized = win.isMinimized();
-    };
-
-    win.on("maximize", saveState);
-    win.on("minimize", saveState);
-    win.on("unmaximize", saveState);
-    win.on("restore", saveState);
-
-    const saveBounds = () => {
-        if (win.isMaximized()) return;
-
-        State.store.windowBounds = win.getBounds();
-    };
-
-    win.on("resize", saveBounds);
-    win.on("move", saveBounds);
 }
 
 function initSettingsListeners(win: BrowserWindow) {
@@ -475,7 +455,7 @@ function createMainWindow() {
         win.flashFrame(false);
     });
 
-    initWindowBoundsListeners(win);
+    if (!isSafeMode) trackWindowState(win, State.store);
     if (!isDeckGameMode && (Settings.store.tray ?? true) && process.platform !== "darwin")
         initTray(win, q => (isQuitting = q));
 
@@ -552,24 +532,19 @@ export async function createWindows() {
     addSplashLog();
     mainWin = createMainWindow();
 
-    AppEvents.on("appLoaded", () => {
+    if (!isSafeMode && State.store.maximized && !isDeckGameMode) restoreWindowMaximized(mainWin);
+
+    AppEvents.once("appLoaded", () => {
         splash?.destroy();
 
         if (!startMinimized) {
             if (splash) mainWin?.show();
-            if (State.store.maximized && !isDeckGameMode) mainWin?.maximize();
         }
 
         if (isDeckGameMode) {
             mainWin?.setFullScreen(true);
             askToApplySteamLayout(mainWin);
         }
-
-        mainWin.once("show", () => {
-            if (State.store.maximized && !mainWin?.isMaximized() && !isDeckGameMode) {
-                mainWin?.maximize();
-            }
-        });
     });
 
     mainWin.webContents.on("did-navigate", (_, url: string, responseCode: number) => {
