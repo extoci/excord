@@ -9,6 +9,9 @@ const diagnostics: PerformanceSnapshot = {
     upstream: { version: "1.15.11.0", commit: "e0e85c8d4f6dc73aac9368cf3f4b2200eac4d4b4" },
     localPlugins: { plugins: [], issues: [], preparedAt: "2026-10-18T21:30:00Z", durationMs: 12 }
 };
+const scenario = new URLSearchParams(location.search).get("scenario");
+if (scenario === "populated") diagnostics.localPlugins.plugins.push({ folder: "a".repeat(64), code: "", cacheHit: true, durationMs: 1 });
+let initialFailure = scenario === "error";
 const native: ExcordNativeApi = {
     getUpdateState: async () => ({ revision: 0, currentVersion: "0.0.0-alpha1", phase: "unsupported", progress: 0, installOnQuit: false }),
     updateAction: async () => {}, onUpdateState: () => () => {},
@@ -20,10 +23,10 @@ const native: ExcordNativeApi = {
     openPluginsFolder: async () => {},
     createPlugin: async name => { diagnostics.localPlugins.plugins.push({ folder: name, code: "", cacheHit: false, durationMs: 10 }); return `/preview/plugins/${name}`; },
     refresh: async () => { window.location.reload(); },
-    diagnostics: async () => diagnostics,
+    diagnostics: async () => { if (initialFailure) { initialFailure = false; throw new Error("Sample failure"); } return diagnostics; },
     openSettings: async () => {},
     exportDiagnostics: async () => false
 };
 globalThis.ExcordNative = native;
-globalThis.VesktopNative = { app: { getVersion: () => "0.1.0" } } as typeof VesktopNative;
+globalThis.VesktopNative = { app: { getVersion: () => "0.0.1-alpha.1" } } as typeof VesktopNative;
 createRoot(document.getElementById("root")!).render(<main><ControlCenter /></main>);

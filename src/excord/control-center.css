@@ -1,2 +1,78 @@
-.excord-control{--excord-accent:#b2f3b3;--excord-card:var(--background-secondary,#202326);--excord-border:var(--border-subtle,#ffffff12);color:var(--text-normal,#e7e9ec);font-family:var(--font-primary,system-ui,sans-serif);max-width:960px;margin:0 auto 48px;line-height:1.55}
-.excord-control *{box-sizing:border-box}.excord-control h2,.excord-control h3,.excord-control h4{color:var(--header-primary,#f5f5f6);margin:0 0 6px;font-weight:600}.excord-control h2{font-size:24px;letter-spacing:-.6px}.excord-control h3{font-size:16px}.excord-control h4{font-size:15px}.excord-control p{font-size:14px;color:var(--text-muted,#a4a9b1);margin:8px 0 16px}.excord-header{padding:6px 0 20px}.excord-wordmark{display:flex;gap:12px;align-items:center;font-size:30px;font-weight:650;letter-spacing:-1.2px}.excord-mark{display:grid;place-items:center;width:38px;height:38px;color:#172119;background:var(--excord-accent);font-family:system-ui,sans-serif;font-weight:800;border-radius:12px;line-height:1}.excord-version{font:12px var(--font-code,monospace);color:var(--text-muted,#a4a9b1);background:var(--excord-card);border:1px solid var(--excord-border);border-radius:5px;padding:3px 6px;letter-spacing:0}.excord-header p{margin:12px 0 0}.excord-tabs{display:flex;gap:6px;border-bottom:1px solid var(--excord-border);margin:0 0 30px;padding-bottom:12px}.excord-control button{font:inherit;font-size:13px;color:var(--text-normal,#e7e9ec);background:transparent;border:1px solid var(--excord-border);border-radius:7px;padding:8px 13px;cursor:pointer;white-space:nowrap}.excord-control button:hover{background:var(--background-modifier-hover,#ffffff0b)}.excord-tabs button{border-color:transparent}.excord-tabs button[aria-pressed=true]{background:var(--excord-card);border-color:var(--excord-border);color:var(--excord-accent)}.excord-control button:disabled{opacity:.5;cursor:default}.excord-control button:focus-visible,.excord-control input:focus-visible{outline:2px solid var(--excord-accent);outline-offset:3px}.excord-control .excord-primary{background:var(--excord-accent);color:#172119;border-color:transparent;font-weight:650}.excord-section-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:24px 0 16px}.excord-section-heading p{margin:0}.excord-card{background:var(--excord-card);border:1px solid var(--excord-border);border-radius:10px;padding:20px;margin-bottom:14px}.excord-card p:last-child{margin-bottom:0}.excord-create label{display:block;font-size:14px;font-weight:600;margin-bottom:10px}.excord-input-row{display:flex;gap:10px}.excord-control input{font:inherit;color:inherit;background:var(--background-tertiary,#16181b);border:1px solid var(--excord-border);border-radius:7px;padding:10px 12px;min-width:0;flex:1}.excord-create p,.excord-note{font-size:12px!important}.excord-count{font-size:11px;color:var(--text-muted,#a4a9b1);padding:3px 6px;background:var(--excord-card);border-radius:4px;margin-left:6px}.excord-control kbd{font:11px var(--font-code,monospace);opacity:.6;margin-left:12px}.excord-empty{padding:44px 20px;text-align:center;border:1px dashed var(--excord-border);border-radius:10px}.excord-empty>span{font:28px var(--font-code,monospace);color:var(--excord-accent);display:block;margin-bottom:12px}.excord-empty p{max-width:360px;margin:8px auto 0}.excord-plugin{display:flex;align-items:center;justify-content:space-between}.excord-plugin p{margin:0;font-size:12px}.excord-cache{font:11px var(--font-code,monospace);color:var(--text-muted,#a4a9b1)}.excord-message{padding:14px 16px;background:var(--excord-card);border:1px solid var(--excord-border);border-radius:8px;margin-bottom:16px;font-size:13px}.excord-error{border-color:#ee697966;color:var(--text-danger,#ff9aab)}.excord-message pre{font:12px var(--font-code,monospace);white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0 0}.excord-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.excord-metrics .excord-card{padding:18px}.excord-metrics span{font-size:11px;color:var(--text-muted,#a4a9b1)}.excord-metrics strong{display:block;font-size:28px;letter-spacing:-1px;margin:8px 0}.excord-metrics p{font-size:11px}.excord-control code{font:11px var(--font-code,monospace);overflow-wrap:anywhere}.excord-processes{overflow-x:auto}.excord-processes table{width:100%;border-collapse:collapse;font-size:12px}.excord-processes th,.excord-processes td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--excord-border)}.excord-processes th{color:var(--text-muted,#a4a9b1);font-weight:500}.excord-note{margin-top:18px!important}@media(max-width:650px){.excord-metrics{grid-template-columns:1fr}.excord-section-heading{align-items:flex-start;flex-direction:column}.excord-input-row{flex-direction:column}.excord-tabs{gap:0}.excord-tabs button{padding:8px 10px}.excord-wordmark{font-size:26px}}
+.excord-control {
+    --excord-accent: var(--brand-500, #5865f2);
+    --excord-surface: var(--background-mod-subtle, var(--background-secondary, #27272c));
+    --excord-border: var(--border-subtle, #ffffff14);
+    color: var(--text-normal, #e3e3e8);
+    font-family: var(--font-primary, system-ui, sans-serif);
+    max-width: 960px;
+    margin: 0 auto 40px;
+    line-height: 1.5;
+}
+.excord-control * { box-sizing: border-box; }
+.excord-control :is(h2,h3,h4,p) { margin: 0; }
+.excord-control :is(h2,h3,h4) { color: var(--header-primary, #f2f3f5); font-weight: 600; }
+.excord-control h2 { font-size: 24px; letter-spacing: -.6px; }
+.excord-control h3 { font-size: 18px; letter-spacing: -.3px; }
+.excord-control h4 { font-size: 14px; }
+.excord-control p { color: var(--text-muted, #a5a5b0); font-size: 13px; margin-top: 5px; }
+.excord-header { padding: 4px 0 24px; }
+.excord-wordmark { display: flex; align-items: center; gap: 10px; }
+.excord-mark { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--excord-accent); color: #fff; font-size: 23px; font-weight: 700; line-height: 1; }
+.excord-version { color: var(--text-muted, #a5a5b0); font-size: 12px; margin-left: auto; }
+.excord-tabs { display: flex; gap: 24px; border-bottom: 1px solid var(--excord-border); margin-bottom: 28px; }
+.excord-control button { font: inherit; font-size: 13px; font-weight: 500; color: inherit; background: var(--excord-surface); border: 1px solid var(--excord-border); border-radius: 6px; padding: 7px 12px; cursor: pointer; white-space: nowrap; }
+.excord-control button:hover { background: var(--background-modifier-hover, #ffffff10); }
+.excord-control button:disabled { opacity: .5; cursor: default; }
+.excord-control :is(button,input,summary):focus-visible { outline: 2px solid var(--focus-primary, #7b9dff); outline-offset: 3px; }
+.excord-tabs button { background: transparent; border: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 0 0 12px; color: var(--text-muted, #a5a5b0); }
+.excord-tabs button[aria-pressed=true] { color: var(--header-primary, #f2f3f5); border-bottom-color: var(--excord-accent); }
+.excord-control .excord-primary { color: #fff; background: var(--excord-accent); border-color: transparent; }
+.excord-control .excord-primary:hover { background: var(--brand-560, #4752c4); }
+.excord-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.excord-count { font-size: 11px; font-weight: 500; background: var(--excord-surface); color: var(--text-muted, #a5a5b0); border-radius: 4px; padding: 2px 6px; vertical-align: middle; margin-left: 5px; }
+.excord-empty { display: flex; align-items: center; gap: 16px; padding: 24px 20px; background: var(--excord-surface); border: 1px solid var(--excord-border); border-radius: 8px; }
+.excord-plugin-icon { flex-shrink: 0; color: var(--text-muted, #a5a5b0); font: 20px var(--font-code, monospace); }
+.excord-plugin-actions { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+.excord-control kbd { margin-left: 8px; font: 10px var(--font-code, monospace); color: var(--text-muted, #a5a5b0); }
+.excord-create { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--excord-border); }
+.excord-create label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.excord-input-row { display: flex; gap: 8px; }
+.excord-control input { min-width: 0; flex: 1; font: inherit; font-size: 14px; color: inherit; background: var(--input-background, #18181c); border: 1px solid var(--excord-border); border-radius: 5px; padding: 9px 12px; }
+.excord-plugin { display: flex; gap: 14px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--excord-border); }
+.excord-plugin > div { min-width: 0; flex: 1; }
+.excord-plugin h4 { overflow-wrap: anywhere; }
+.excord-cache { margin-left: auto; color: var(--text-muted, #a5a5b0); font-size: 12px; white-space: nowrap; }
+.excord-control .excord-note { font-size: 12px; margin: 16px 0; }
+.excord-details { border-top: 1px solid var(--excord-border); padding: 16px 0; font-size: 13px; }
+.excord-details summary { cursor: pointer; color: var(--header-secondary, #c7c7d0); font-weight: 500; }
+.excord-details p { margin: 12px 0 0; }
+.excord-metrics { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); border: 1px solid var(--excord-border); background: var(--excord-surface); border-radius: 8px; margin: 0; padding: 20px 0; }
+.excord-metrics > div { padding: 0 20px; }
+.excord-metrics > div + div { border-left: 1px solid var(--excord-border); }
+.excord-metrics dt { font-size: 12px; color: var(--text-muted, #a5a5b0); }
+.excord-metrics dd { margin: 6px 0 0; color: var(--header-primary, #f2f3f5); font-size: 25px; font-weight: 600; letter-spacing: -.8px; font-variant-numeric: tabular-nums; }
+.excord-processes { overflow-x: auto; margin-top: 12px; }
+.excord-processes table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.excord-processes :is(th,td) { text-align: right; padding: 11px 8px; border-bottom: 1px solid var(--excord-border); }
+.excord-processes :is(th,td):first-child { text-align: left; padding-left: 0; }
+.excord-processes th { color: var(--text-muted, #a5a5b0); font-size: 11px; font-weight: 500; }
+.excord-support-row { display: flex; gap: 20px; justify-content: space-between; align-items: center; }
+.excord-build-info { margin: 8px 0; }
+.excord-build-info > div { display: grid; grid-template-columns: 145px 1fr; gap: 12px; padding: 12px 0; border-top: 1px solid var(--excord-border); font-size: 13px; }
+.excord-build-info dt { color: var(--text-muted, #a5a5b0); }
+.excord-build-info dd { margin: 0; min-width: 0; }
+.excord-control code { font: 11px var(--font-code, monospace); overflow-wrap: anywhere; }
+.excord-message { padding: 12px 14px; border: 1px solid var(--excord-border); border-radius: 6px; margin-bottom: 18px; font-size: 13px; background: var(--excord-surface); }
+.excord-error { border-color: var(--status-danger, #f27780); color: var(--text-danger, #ff9aab); }
+.excord-message pre { font: 12px var(--font-code, monospace); white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0 0; }
+.excord-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+@media (max-width: 520px) {
+    .excord-tabs { gap: 20px; }
+    .excord-metrics { grid-template-columns: 1fr; padding: 0; }
+    .excord-metrics > div { padding: 14px 20px; }
+    .excord-metrics > div + div { border-left: 0; border-top: 1px solid var(--excord-border); }
+    .excord-support-row { align-items: flex-start; flex-direction: column; gap: 12px; }
+    .excord-build-info > div { grid-template-columns: 110px 1fr; }
+    .excord-input-row { flex-direction: column; }
+    .excord-plugin { flex-wrap: wrap; }
+}
