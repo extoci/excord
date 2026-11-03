@@ -7,14 +7,16 @@ import type { PerformanceSnapshot } from "./types";
 export function ControlCenter() {
     const [diagnostics, setDiagnostics] = useState<PerformanceSnapshot | null>(null);
     const [name, setName] = useState("");
+    const [creating, setCreating] = useState(false);
     const [busy, setBusy] = useState(false);
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
     const [tab, setTab] = useState<"plugins" | "performance" | "compatibility">("plugins");
 
     async function load() {
+        setError("");
         try { setDiagnostics(await ExcordNative.diagnostics()); }
-        catch (error) { setError(String(error)); }
+        catch { setError("Couldn't read diagnostics. Try again."); }
     }
     useEffect(() => { void load(); }, []);
 
@@ -25,47 +27,52 @@ export function ControlCenter() {
         finally { setBusy(false); }
     }
 
+    const plugins = diagnostics?.localPlugins.plugins ?? [];
     const memory = diagnostics?.processes.reduce((sum, process) => sum + process.memoryMiB, 0);
     return <section className="excord-control" aria-label="Excord control center">
         <header className="excord-header">
-            <div className="excord-wordmark"><span className="excord-mark" aria-hidden="true">e</span><span>Excord</span><span className="excord-version">v{String(VesktopNative.app.getVersion())}</span></div>
-            <p>Desktop settings and personal TypeScript plugins.</p>
+            <div className="excord-wordmark"><span className="excord-mark" aria-hidden="true">e</span><h2>Excord</h2><span className="excord-version">{String(VesktopNative.app.getVersion())}</span></div>
+            <p>Desktop settings</p>
         </header>
         <nav className="excord-tabs" aria-label="Excord settings">
-            {(["plugins", "performance", "compatibility"] as const).map(item => <button key={item} aria-pressed={tab === item} onClick={() => setTab(item)}>{item === "plugins" ? "Local plugins" : item === "performance" ? "Performance" : "Compatibility"}</button>)}
+            {(["plugins", "performance", "compatibility"] as const).map(item => <button key={item} aria-pressed={tab === item} onClick={() => setTab(item)}>{item === "plugins" ? "Local plugins" : item === "performance" ? "Performance" : "About & support"}</button>)}
         </nav>
         {error && <div className="excord-message excord-error" role="alert">{error}</div>}
         {message && <div className="excord-message" role="status">{message}</div>}
         {tab === "plugins" && <>
-            <div className="excord-section-heading"><div><h2>Personal TypeScript plugins</h2><p>Edit a plugin folder, then refresh Excord.</p></div><button disabled={busy} onClick={() => void act(() => ExcordNative.openPluginsFolder())}>Open plugins folder</button></div>
-            <div className="excord-card excord-create">
-                <form onSubmit={event => { event.preventDefault(); void act(async () => { await ExcordNative.createPlugin(name); setMessage(`Created ${name}. Edit index.ts, then refresh to load it.`); setName(""); }); }}>
-                    <label htmlFor="excord-plugin-name">Create a personal plugin</label>
-                    <div className="excord-input-row"><input id="excord-plugin-name" placeholder="my-first-plugin" value={name} onChange={event => setName(event.target.value)} pattern="[a-z][a-z0-9-]{0,63}" required maxLength={64} autoComplete="off" /><button className="excord-primary" disabled={busy || !name}>Create plugin</button></div>
-                    <p>Uses the Vencord plugin API. Local plugins run with your Discord session; native.ts can also use your computer's Node APIs.</p>
-                </form>
+            <div className="excord-section-heading"><div><h3>Local plugins <span className="excord-count">{diagnostics ? plugins.length : "…"}</span></h3><p>Add your own plugins to Excord.</p></div><button disabled={busy} onClick={() => void act(() => ExcordNative.openPluginsFolder())}>Open folder</button></div>
+            {!diagnostics ? error ? <button disabled={busy} onClick={() => void act(load)}>Retry loading plugins</button> : <p role="status">Loading plugins…</p> : plugins.length ? <div className="excord-plugin-list">{plugins.map(plugin => <div className="excord-plugin" key={plugin.folder}><span className="excord-plugin-icon" aria-hidden="true">&#123; &#125;</span><div><h4>{plugin.folder}</h4><p>{plugin.nativePath ? "Plugin with desktop access" : "TypeScript plugin"}</p></div><span className="excord-cache">{plugin.cacheHit ? "Cached" : `${plugin.durationMs.toFixed(0)} ms`}</span></div>)}</div> : <div className="excord-empty"><span className="excord-plugin-icon" aria-hidden="true">&#123; &#125;</span><div><h4>No local plugins yet</h4><p>Drop a plugin into your folder, then refresh Excord.</p></div></div>}
+            <div className="excord-plugin-actions">
+                <button className="excord-primary" aria-expanded={creating} aria-controls="excord-create-plugin" onClick={() => setCreating(!creating)}>{creating ? "Cancel" : "New plugin"}</button>
+                <button disabled={busy} onClick={() => void act(() => ExcordNative.refresh())}>Refresh Excord <kbd>{navigator.platform.includes("Mac") ? "⌘R" : "Ctrl+R"}</kbd></button>
             </div>
-            <div className="excord-section-heading"><h3>Prepared plugin folders <span className="excord-count">{diagnostics?.localPlugins.plugins.length ?? 0}</span></h3><button disabled={busy} onClick={() => void act(() => ExcordNative.refresh())}>Refresh Excord <kbd>{navigator.platform.includes("Mac") ? "⌘R" : "Ctrl+R"}</kbd></button></div>
-            {diagnostics?.localPlugins.plugins.length ? <div className="excord-plugin-list">{diagnostics.localPlugins.plugins.map(plugin => <div className="excord-card excord-plugin" key={plugin.folder}><div><h4>{plugin.folder}</h4><p>{plugin.nativePath ? "TypeScript + native module" : "TypeScript plugin"}</p></div><span className="excord-cache">{plugin.cacheHit ? "Cached" : `${plugin.durationMs.toFixed(0)} ms to compile`}</span></div>)}</div> : <div className="excord-empty"><span aria-hidden="true">&#123; &#125;</span><h3>No local plugins loaded</h3><p>Create a plugin above, or copy a plugin folder into the plugins directory.</p></div>}
+            {creating && <form id="excord-create-plugin" className="excord-create" onSubmit={event => { event.preventDefault(); void act(async () => { await ExcordNative.createPlugin(name); setMessage(`Created ${name}. Edit index.ts, then refresh Excord to load it.`); setName(""); setCreating(false); }); }}>
+                <label htmlFor="excord-plugin-name">Plugin folder name</label>
+                <div className="excord-input-row"><input id="excord-plugin-name" placeholder="my-first-plugin" value={name} onChange={event => setName(event.target.value)} pattern="[a-z][a-z0-9-]{0,63}" required maxLength={64} autoComplete="off" /><button className="excord-primary" disabled={busy || !name}>Create plugin</button></div>
+                <p>Use lowercase letters, numbers, and hyphens. Start with a letter.</p>
+            </form>}
             {(diagnostics?.localPlugins.issues ?? []).map((issue, index) => <div className="excord-message excord-error" key={index}><strong>{issue.folder}</strong><pre>{issue.message}</pre></div>)}
-            <p className="excord-note">The bundled Equicord catalog is in Discord Settings → Plugins. Enable, disable, and configure local plugins there too.</p>
+            <p className="excord-note">Manage bundled and local plugins in Settings → Plugins.</p>
+            <details className="excord-details"><summary>Writing a plugin</summary><p>Plugins use the Vencord API. Edit index.ts in your plugin folder and refresh Excord to apply changes. Only add code you trust. Plugins can access your Discord session, and native.ts can access your computer.</p></details>
         </>}
         {tab === "performance" && <>
-            <div className="excord-section-heading"><div><h2>Performance measurements</h2><p>Process metrics are sampled when you open this page or click Update.</p></div><button onClick={() => void load()}>Update metrics</button></div>
-            <div className="excord-metrics">
-                <div className="excord-card"><span>Navigation startup</span><strong>{diagnostics?.startupMs == null ? "Pending" : `${(diagnostics.startupMs / 1000).toFixed(2)} s`}</strong><p>Process start to the first page load. This does not measure account readiness.</p></div>
-                <div className="excord-card"><span>Process working sets</span><strong>{memory === undefined ? "…" : `${memory.toFixed(0)} MiB`}</strong><p>Sum across Electron processes. Shared memory may appear in more than one process.</p></div>
-                <div className="excord-card"><span>Local plugin preparation</span><strong>{diagnostics ? `${diagnostics.localPlugins.durationMs.toFixed(0)} ms` : "…"}</strong><p>Includes the folder scan, compilation, and cache reads.</p></div>
-            </div>
-            <div className="excord-card"><h3>Excord's defaults</h3><p>No splash window. No plugin runtime download at launch. Rich Presence stays off until you enable it, and uses Electron's Node runtime when enabled. Changed plugins compile on refresh; unchanged folders use their compiled cache.</p><p>ExcordEfficiency reduces CSS animation and pauses muted decorative video while hidden. Configure or disable it in Settings → Plugins.</p></div>
-            <div className="excord-processes"><table><thead><tr><th>Process</th><th>CPU</th><th>Working set</th></tr></thead><tbody>{diagnostics?.processes.map((process, index) => <tr key={index}><td>{process.type}</td><td>{process.cpuPercent.toFixed(1)}%</td><td>{process.memoryMiB.toFixed(1)} MiB</td></tr>)}</tbody></table></div>
+            <div className="excord-section-heading"><div><h3>Performance</h3><p>A snapshot of what Excord is using.</p></div><button disabled={busy} onClick={() => void act(load)}>Refresh metrics</button></div>
+            <dl className="excord-metrics">
+                <div><dt>Memory</dt><dd>{memory === undefined ? "…" : `${memory.toFixed(0)} MiB`}</dd></div>
+                <div><dt>Startup</dt><dd>{diagnostics?.startupMs == null ? "Pending" : `${(diagnostics.startupMs / 1000).toFixed(2)} s`}</dd></div>
+                <div><dt>Plugin preparation</dt><dd>{diagnostics ? `${diagnostics.localPlugins.durationMs.toFixed(0)} ms` : "…"}</dd></div>
+            </dl>
+            <p className="excord-note">Memory includes shared process memory and may count it more than once. Startup measures the first page load, not when your account is ready.</p>
+            <details className="excord-details" open><summary>Processes <span className="excord-count">{diagnostics?.processes.length ?? "…"}</span></summary><div className="excord-processes"><table><caption className="excord-sr-only">Current process usage</caption><thead><tr><th scope="col">Process</th><th scope="col">CPU</th><th scope="col">Memory</th></tr></thead><tbody>{diagnostics?.processes.map((process, index) => <tr key={index}><td>{process.type === "Tab" ? "Discord renderer" : process.type}</td><td>{process.cpuPercent.toFixed(1)}%</td><td>{process.memoryMiB.toFixed(1)} MiB</td></tr>)}</tbody></table></div></details>
+            <details className="excord-details"><summary>How Excord saves resources</summary><p>Hidden windows reduce interface activity while calls and capture keep full speed. ExcordEfficiency reduces animations and pauses decorative videos while hidden. Configure it in Settings → Plugins.</p><p>Local plugins compile on refresh. Unchanged plugins use their compiled cache. Rich Presence stays off until you enable it.</p></details>
         </>}
         {tab === "compatibility" && <>
-            <div className="excord-card"><h3>Closed alpha feedback</h3><p>Export a diagnostics report when reporting a problem. It includes build versions and process metrics, and excludes account data, URLs, file paths, plugin source, and raw error messages.</p><button disabled={busy} onClick={() => void act(async () => { if (await ExcordNative.exportDiagnostics()) setMessage("Diagnostics saved. Share the JSON file with the person testing Excord with you."); })}>Export diagnostics</button><p>If plugins prevent Excord from loading, use Excord → Restart in safe mode. On Windows, press Alt to reveal the menu. Safe mode keeps your login and plugin folders.</p></div>
-            <h2>What Excord keeps</h2><p>Excord v0 retains Equicord's plugin manager, Webpack patcher, settings APIs, and bundled plugins. The desktop integration comes from Equibop and Vesktop. These are deliberate compatibility costs, not a completed core rewrite.</p>
-            <div className="excord-card"><h3>Bundled revision</h3><p>Equicord {diagnostics?.upstream.version}</p><code>{diagnostics?.upstream.commit}</code><p>The runtime updates with Excord releases. Excord does not host a separate plugin catalog.</p></div>
-            <div className="excord-card"><h3>Local plugin compatibility</h3><p>Local plugins share the bundled runtime's API modules and initialize before Discord loads. Patches, settings, dependencies, JSX, managed CSS, and native.ts use the upstream lifecycle. Unknown imports produce compilation errors.</p><p>Plugins that rely on Discord's native desktop modules may need those modules to exist in a web wrapper. A successful build does not verify every plugin against a live Discord account.</p></div>
-            <div className="excord-card"><h3>Platform verification</h3><p>Primary release targets are Apple silicon macOS 27+ and Windows x64. Voice, screen sharing, device permissions, and installation must also pass on those operating systems.</p></div>
+            <div className="excord-section-heading"><div><h3>About & support</h3><p>Build information and help with problems.</p></div></div>
+            <div className="excord-support-row"><div><h4>Report a problem</h4><p>Save a diagnostics file to share with your bug report.</p></div><button disabled={busy} onClick={() => void act(async () => { if (await ExcordNative.exportDiagnostics()) setMessage("Diagnostics saved. Attach the JSON file to your bug report."); })}>Export diagnostics</button></div>
+            <p className="excord-note">The report includes build versions and process usage. It excludes account data, URLs, file paths, plugin source, and raw errors.</p>
+            <details className="excord-details"><summary>Excord won't load?</summary><p>Choose Restart in safe mode from the Excord menu. On Windows, press Alt to reveal the menu. Safe mode disables plugins and themes while keeping your login and plugin folders.</p></details>
+            <dl className="excord-build-info"><div><dt>Excord</dt><dd>{String(VesktopNative.app.getVersion())}</dd></div><div><dt>Equicord</dt><dd>{diagnostics?.upstream.version ?? "…"}</dd></div><div><dt>Runtime revision</dt><dd><code>{diagnostics?.upstream.commit ?? "…"}</code></dd></div><div><dt>Platforms</dt><dd>macOS 27+ · Apple silicon<br />Windows · x64</dd></div></dl>
+            <details className="excord-details"><summary>Plugin compatibility</summary><p>Excord bundles Equicord's plugin catalog and APIs. Runtime updates arrive with Excord releases. Its desktop integration comes from Equibop and Vesktop.</p><p>Local plugins share those APIs. Plugins that need Discord's native desktop modules may not work in Excord. A successful build does not verify every plugin or device feature.</p></details>
         </>}
     </section>;
 }
