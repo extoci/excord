@@ -26,6 +26,7 @@ export interface Settings {
     disableSmoothScroll: boolean;
     hardwareAcceleration: boolean;
     backgroundEfficiency: boolean;
+    autoDownloadUpdates: boolean;
     hardwareVideoAcceleration: boolean;
     arRPC: boolean;
     arRPCDisabled: boolean;

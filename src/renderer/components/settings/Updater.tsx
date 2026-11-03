@@ -11,8 +11,11 @@ import { React } from "@equicord/types/webpack/common";
 import { RELEASES_URL } from "../../../excord/updateFeed";
 import type { UpdateAction, UpdateSnapshot } from "../../../excord/updates";
 import { cl } from "./Settings";
+import { getValueAndOnChange, useSettings } from "../../settings";
+import { VesktopSettingsSwitch } from "./VesktopSettingsSwitch";
 
 export function Updater() {
+    useSettings();
     const [state, setState] = React.useState<UpdateSnapshot>();
     const [error, setError] = React.useState<string>();
     React.useEffect(() => {
@@ -30,6 +33,7 @@ export function Updater() {
     };
     return <div className={cl("updater-card")}>
         <Heading tag="h4">Updates</Heading>
+        <VesktopSettingsSwitch {...getValueAndOnChange("autoDownloadUpdates")} title="Download updates automatically" description="Download updates in the background. Turn this off to choose which updates to download. Installation always waits for Restart and update." />
         {state && <Paragraph>Current version: {state.currentVersion}</Paragraph>}
         <div role="status" aria-live="polite">
             {(!state && !error) && "Loading update status…"}
@@ -38,7 +42,7 @@ export function Updater() {
             {state?.phase === "checking" && "Checking for updates…"}
             {state?.phase === "available" && `Update available: ${state.version}`}
             {state?.phase === "downloading" && `Downloading ${state.version}… ${Math.floor(state.progress)}%`}
-            {state?.phase === "ready" && (state.installOnQuit ? "The update will install when you quit Excord. It won’t reopen the app." : `Update ${state.version} is ready.`)}
+            {state?.phase === "ready" && `Update ready: ${state.version}. Restart when it suits you.`}
             {state?.phase === "installing" && "Installing update…"}
             {state?.phase === "manual" && `Update ${state.version} needs a manual installation.`}
         </div>
@@ -49,7 +53,6 @@ export function Updater() {
             {state?.phase === "available" && <Button onClick={() => act("download")}>Download update</Button>}
             {state?.phase === "downloading" && <Button variant="secondary" onClick={() => act("cancel")}>Cancel</Button>}
             {state?.phase === "ready" && <>
-                <Button variant="secondary" onClick={() => act(state.installOnQuit ? "keep-current" : "install-on-quit")}>{state.installOnQuit ? "Cancel install on quit" : "Install when I quit"}</Button>
                 <Button onClick={() => act("restart")}>Restart and update</Button>
             </>}
             <a href={RELEASES_URL} target="_blank" rel="noreferrer">Release notes and installers</a>

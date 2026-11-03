@@ -14,7 +14,7 @@ import { isDiscordOrigin } from "../excord/origin";
 import { resolveUpdateFeed } from "../excord/updateFeed";
 import { UpdateController } from "../excord/updates";
 import { AppEvents } from "./events";
-import { State } from "./settings";
+import { Settings, State } from "./settings";
 import { handle } from "./utils/ipcWrappers";
 
 // Consent is owned by UpdateController, including after a cached download is reused.
@@ -51,6 +51,8 @@ export const updates = new UpdateController({
     State.store.updater ??= {};
     State.store.updater.lastCheckedAt = time;
 });
+updates.setAutomaticDownloads(Settings.store.autoDownloadUpdates);
+Settings.addChangeListener("autoDownloadUpdates", enabled => updates.setAutomaticDownloads(enabled));
 autoUpdater.on("download-progress", progress => updates.progress(progress.percent));
 // Check/download errors reject their operation promises. Install errors arrive as events.
 autoUpdater.on("error", error => updates.installFailed(error));

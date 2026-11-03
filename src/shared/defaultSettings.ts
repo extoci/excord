@@ -10,6 +10,7 @@ export const DefaultExcordSettings: Settings = {
     discordBranch: "stable",
     hardwareAcceleration: true,
     backgroundEfficiency: true,
+    autoDownloadUpdates: true,
     hardwareVideoAcceleration: false,
     nativeTitleBar: process.platform !== "win32",
     staticTitle: false,
