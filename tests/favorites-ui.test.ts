@@ -48,13 +48,13 @@ async function dialogHarness({ captureNative = true } = {}) {
         TextInput: (props: any) => React.createElement("input", { value: props.value, readOnly: true }),
         openModal: (render: typeof renderModal) => { renderModal = render; },
         openModalLazy: async (load: () => Promise<typeof renderModal>) => { renderModal = await load(); },
-        Toasts: { show() {} }, showToast(message: string) { messages.push(message); }
+        Toasts: { show() {} }, showToast(data: { text: string; variant: string }) { if (data.variant !== "critical") throw Error("Wrong toast variant"); messages.push(data.text); }
     };
     const plugin = createFavoritesPlugin({
         "@webpack/common": common,
         "@api/DataStore": { get: async () => data, set: async (_key: string, value: unknown) => { saves.push(value); } },
         "@api/ServerList": { addServerListElement: (_position: unknown, render: React.FunctionComponent) => { Rail = render; }, removeServerListElement() {} },
-        "@components/ErrorBoundary": { default: "native-error-boundary" },
+        "@components/Text": { Text: "native-text" }, "@components/ErrorBoundary": { default: "native-error-boundary" },
         "@webpack": { filters: { byCode: () => () => true }, findComponentByCodeLazy: lazy,
             findByCodeLazy: () => () => ({}), findByPropsLazy: () => ({ addRouteChangeListener: () => () => {} }),
             extractAndLoadChunksLazy: () => async () => true,

@@ -80,7 +80,9 @@ const nativeBridge: Plugin = {
     }
 };
 
+const monacoPackage = JSON.parse(await readFile(join(root, "node_modules/@vencord/monaco-editor/package.json"), "utf8"));
 const defines = {
+    DESKTOP_MONACO_EDITOR_URL: `https://cdn.jsdelivr.net/npm/@vencord/monaco-editor@${monacoPackage.version}/dist/index.html`,
     IS_STANDALONE: true, IS_DEV: false, IS_REPORTER: false, IS_COMPANION_TEST: false,
     IS_UPDATER_DISABLED: true, IS_ANTI_CRASH_TEST: false, IS_WEB: false,
     IS_EXTENSION: false, IS_USERSCRIPT: false, IS_DISCORD_DESKTOP: false,

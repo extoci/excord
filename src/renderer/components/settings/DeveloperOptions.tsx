@@ -4,7 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Button, Heading, Paragraph } from "@equicord/types/components";
+import { Button, Paragraph } from "@equicord/types/components";
+import { Heading } from "@equicord/types/components/Heading";
 import { Margins, openModal } from "@equicord/types/utils";
 import { Modal } from "@equicord/types/webpack/common";
 

@@ -104,7 +104,7 @@ describe("account-scoped persistence", () => {
 test("sidebar patch replaces only the channel-list body, retaining rail, panels, and resize controls", () => {
     const dummy = () => () => null;
     const plugin = createFavoritesPlugin({
-        "@webpack/common": {}, "@api/ServerList": {}, "@api/DataStore": {}, "@components/ErrorBoundary": { default: dummy },
+        "@webpack/common": {}, "@api/ServerList": {}, "@api/DataStore": {}, "@components/Text": { Text: "native-text" }, "@components/ErrorBoundary": { default: dummy },
         "@webpack": { extractAndLoadChunksLazy: () => async () => true, filters: { byCode: dummy }, findComponentByCodeLazy: dummy, findByCodeLazy: dummy, findByPropsLazy: dummy, mapMangledModuleLazy: dummy, findCssClassesLazy: dummy }
     });
     const replacement = plugin.patches[0].replacement;
@@ -160,7 +160,7 @@ test("rail reads current unread/mention state, observes notification stores, and
             },
             "@api/ServerList": { addServerListElement: (_position: unknown, render: () => Element) => { Rail = render; }, removeServerListElement() {} },
             "@api/DataStore": { get: async () => data, set: async () => {} },
-            "@components/ErrorBoundary": { default: "error-boundary" },
+            "@components/Text": { Text: "native-text" }, "@components/ErrorBoundary": { default: "error-boundary" },
             "@webpack": {
                 extractAndLoadChunksLazy: () => async () => true, filters: { byCode: () => () => true }, findComponentByCodeLazy: lazyComponent, findByCodeLazy: lazyComponent,
                 findByPropsLazy: () => ({ addRouteChangeListener: () => () => {} }),
