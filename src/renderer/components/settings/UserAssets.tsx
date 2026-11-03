@@ -56,7 +56,7 @@ function Asset({ asset }: { asset: UserAssetType }) {
                 settings.splashPixelated = false;
             }
         } else if (res === "failed") {
-            showToast("Something went wrong. Please try again");
+            showToast({ text: "Something went wrong. Please try again", variant: "critical" });
         }
     };
 

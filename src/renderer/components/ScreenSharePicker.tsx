@@ -12,13 +12,12 @@ import {
     Card,
     CogWheel,
     FormSwitch,
-    Heading,
-    HeadingTertiary,
     Margins,
     Paragraph,
     RestartIcon,
     Span
 } from "@equicord/types/components";
+import { Heading } from "@equicord/types/components/Heading";
 import { closeModal, Logger, openModal, useAwaiter, useForceUpdater } from "@equicord/types/utils";
 import { onceReady } from "@equicord/types/webpack";
 import { FluxDispatcher, MediaEngineStore, Modal, Select, UserStore, useState } from "@equicord/types/webpack/common";
@@ -351,13 +350,13 @@ function StreamSettingsUi({
 
     return (
         <div>
-            <HeadingTertiary className={Margins.bottom8}>What you're streaming</HeadingTertiary>
+            <Heading tag="h4" className={Margins.bottom8}>What you're streaming</Heading>
             <Card className={cl("card", "preview")}>
                 <img src={thumb} alt="" className={cl(isLinux ? "preview-img-linux" : "preview-img")} />
                 <Paragraph>{source.name}</Paragraph>
             </Card>
 
-            <HeadingTertiary className={Margins.bottom8}>Stream Settings</HeadingTertiary>
+            <Heading tag="h4" className={Margins.bottom8}>Stream Settings</Heading>
 
             <Card className={cl("card")}>
                 <div className={cl("quality")}>

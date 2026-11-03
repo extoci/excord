@@ -11,6 +11,7 @@ type Channel = ReturnType<Common["ChannelStore"]["getChannel"]>;
 
 export function createFavoritesPlugin(modules: Record<string, unknown>) {
     const common = modules["@webpack/common"] as Common;
+    const { Text } = modules["@components/Text"] as typeof import("@equicord/types/components/Text");
     const webpack = modules["@webpack"] as typeof import("@equicord/types/webpack");
     const serverList = modules["@api/ServerList"] as typeof import("@equicord/types/api/ServerList");
     const dataStore = modules["@api/DataStore"] as typeof import("@equicord/types/api/DataStore");
@@ -47,7 +48,7 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
     const subscribe = (listener: () => void) => { listeners.add(listener); return () => listeners.delete(listener); };
     const notifyError = (error: unknown) => {
         console.error("[ExcordFavorites] Could not load or save favorites", error);
-        common.showToast("Favorites could not be loaded or saved. Reload Excord to try again.", "failure");
+        common.showToast({ text: "Favorites could not be loaded or saved. Reload Excord to try again.", variant: "critical" });
     };
     const repository = new FavoritesRepository(dataStore, emit, notifyError);
     const useFavorites = () => { common.React.useSyncExternalStore(subscribe, () => revision); return repository.data; };
@@ -102,7 +103,7 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
             if (!NativeCategory) throw new Error("Discord's category component was not found");
         } catch (error) {
             console.error("[ExcordFavorites] Native category UI unavailable", error);
-            common.showToast("Favorites is unavailable in this Discord build. Your saved favorites are preserved.", "failure");
+            common.showToast({ text: "Favorites is unavailable in this Discord build. Your saved favorites are preserved.", variant: "critical" });
             return;
         }
         if (request !== opening || !running || accountId !== repository.accountId || !repository.ready) return;
@@ -252,7 +253,7 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
             if (event.target === event.currentTarget) menu(event, <Menu.MenuItem id="excord-category-new" label="Create category" action={() => promptCategory()} />);
         }}>
             {data.categories.map(category => <Category key={category.id} category={category} />)}
-            {!data.categories.some(c => c.channelIds.length) && <li><common.Text variant="text-sm/normal" color="text-muted" style={{ padding: 16 }}>Right-click a channel or conversation and choose Add to Favorites.</common.Text></li>}
+            {!data.categories.some(c => c.channelIds.length) && <li><Text size="sm" color="text-muted" style={{ padding: 16 }}>Right-click a channel or conversation and choose Add to Favorites.</Text></li>}
         </ul></ScrollerThin>;
     }
     function FavoritesView() {
@@ -260,7 +261,7 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
         const navigator = useNavigator("excord-favorites");
         return <nav aria-label="Favorites" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
             <Header><Clickable onClick={(event: MouseEvent) => menu(event, <Menu.MenuItem id="excord-category-new" label="Create category" action={() => promptCategory()} />)}>
-                <common.Text variant="heading-md/semibold">Favorites</common.Text>
+                <Text size="md" weight="semibold">Favorites</Text>
             </Clickable></Header>
             <nav.Provider navigator={navigator}><List /></nav.Provider>
         </nav>;
@@ -271,7 +272,7 @@ export function createFavoritesPlugin(modules: Record<string, unknown>) {
         return running && active && repository.ready
             ? <ErrorBoundary fallback={() => fallback()} onError={() => {
                 setActive(false);
-                common.showToast("Favorites is unavailable in this Discord build. Your saved favorites are preserved.", "failure");
+                common.showToast({ text: "Favorites is unavailable in this Discord build. Your saved favorites are preserved.", variant: "critical" });
             }}><FavoritesView /></ErrorBoundary>
             : fallback();
     }

@@ -41,3 +41,15 @@ The initial live Electron smoke test loaded 381 plugin definitions in total, inc
 ## Updates
 
 Excord bundles the exact Equicord revision in `upstream.lock.json`. It does not fetch a different runtime at startup or run Equicord's independent updater. Excord releases update the desktop app and bundled catalog together. Excord does not host a plugin catalog service.
+
+## Dependency refresh, 2026-11-03
+
+The bundled runtime is now [Equicord 1.15.15.0 at 00abcbee](https://github.com/Equicord/Equicord/commit/00abcbeea2ddf4317e02843418f267db62bcb913), including [Vencord 1.15.15 at 8d64c8be](https://github.com/Vencord/Vencord/commit/8d64c8be7e68616f8f116a6fff9480051aa2a0c5). GitHub's ancestry comparison confirms that Vencord commit is included, rather than overlaid as a second runtime. The desktop source incorporates the source changes from [Equibop 3.3.2](https://github.com/Equicord/Equibop/releases/tag/v3.3.2), derived from Vesktop 1.6.8. Excord keeps its own packaging, updater, RPC, settings, and recovery behavior.
+
+The refresh carries Excord's native helper replacement and QuickCSS watcher lifecycle fixes forward. It updates Heading/Text imports and toast payloads for the new upstream APIs. The checked patcher transformation and semantic comparisons still pass. Spellcheck gains readable language names and search, the user agent applies to the session, clipboard image writes use Electron's current API, and macOS titlebars respect the native-titlebar preference.
+
+Upstream moved to pnpm dependency catalogs and a versioned Monaco editor page. Excord materializes the catalog references in the local Discord types manifest for its standalone Bun install and defines the same pinned Monaco page URL in every runtime bundle. The catalog file remains in the vendor tree for provenance. The page is opened only when QuickCSS editing is requested.
+
+The arRPC source pin advances to 23e73dc9, which handles process-enumeration failures. The gifenc source pin is already at its upstream default-branch head. Direct npm dependencies and lockfiles were refreshed, including Electron 45.2.1, electron-builder 26.18.0, electron-updater 6.8.11, Equicord types 1.15.15, and node-gyp 13.1.0 for the Linux helper. TypeScript stays at 6.0.3 because the current typescript-eslint parser rejects TypeScript 7. The linter loads with TS6; the repository's existing formatting/header lint debt is not part of this refresh.
+
+Verification uses unit tests, both type checkers, the runtime/desktop build, RPC loopback checks, a fully mocked native Developer Portal, and the offline background/reload harness. The latter uses the production background policy and can also load the real upstream native/preload bundles to verify one QuickCSS notification after repeated reloads. HTTP(S) requests and account access are not used. These checks do not verify all plugins in a signed-in Discord session or substitute for native Windows/macOS installation and device checks.

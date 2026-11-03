@@ -4,7 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Button, HeadingTertiary, Paragraph } from "@equicord/types/components";
+import { Button, Paragraph } from "@equicord/types/components";
+import { Heading } from "@equicord/types/components/Heading";
 import { React } from "@equicord/types/webpack/common";
 
 import { RELEASES_URL } from "../../../excord/updateFeed";
@@ -28,7 +29,7 @@ export function Updater() {
         void ExcordNative.updateAction(action).catch(() => setError("Couldn’t complete that action. Try again."));
     };
     return <div className={cl("updater-card")}>
-        <HeadingTertiary>Updates</HeadingTertiary>
+        <Heading tag="h4">Updates</Heading>
         {state && <Paragraph>Current version: {state.currentVersion}</Paragraph>}
         <div role="status" aria-live="polite">
             {(!state && !error) && "Loading update status…"}

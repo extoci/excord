@@ -245,7 +245,7 @@ test("the optimized patcher preserves ordering, consumption, ranges, and failed 
 test("Favorites captures the real category after tutorial modules through the production patcher", () => {
   const dummy = () => () => null;
   const plugin = createFavoritesPlugin({
-    "@webpack/common": {}, "@api/ServerList": {}, "@api/DataStore": {}, "@components/ErrorBoundary": { default: dummy },
+    "@webpack/common": {}, "@api/ServerList": {}, "@api/DataStore": {}, "@components/Text": { Text: "native-text" }, "@components/ErrorBoundary": { default: dummy },
     "@webpack": { extractAndLoadChunksLazy: dummy, filters: { byCode: dummy }, findComponentByCodeLazy: dummy, findByCodeLazy: dummy, findByPropsLazy: dummy, mapMangledModuleLazy: dummy, findCssClassesLazy: dummy }
   });
   const patch = plugin.patches[3];
