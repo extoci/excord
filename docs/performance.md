@@ -10,7 +10,7 @@ Electron 43.8 does not restore page visibility when throttling is re-enabled on 
 
 The bundled Equicord patcher uses a conservative prefilter for module factories that cannot match any current patch. Positive candidates still run the upstream replacement loop in its original order. Custom regex matchers and sticky expressions use the upstream path. Global regex state, patch consumption, build ranges, and grouped rollback have regression coverage. The vendor tree remains intact; `scripts/build/optimizePatcher.mts` applies an asserted build-time transformation. An upstream source change fails the build until this transformation is reviewed.
 
-The desktop preload now runs only in the main Discord frame. The native integration test loads a same-origin subframe and verifies it has no desktop or modification bridge.
+The desktop preload now runs only in the main Discord frame. The native integration test loads a same-origin subframe and verifies it has no desktop or modification bridge. The isolation phase uses locally fulfilled host and frame responses at synthetic Discord URLs, so the live login page's frame-src policy cannot prevent the probe from loading. Browser CSP enforcement and Electron sandboxing remain enabled. Failure diagnostics inspect only the fixture's own peers and preserve the original error; they do not query Chromium's entire heap.
 
 ## Runtime comparison
 
