@@ -24,6 +24,8 @@ Mac artifacts use maximum compression. Windows uses normal compression because m
 
 ## Draft and tagged releases
 
+The reusable Native builds workflow only builds and verifies artifacts with read access. The retired Favorites development publisher was removed because its write permission prevented the Release workflow from calling Native builds with a read-only token. Publication remains in the Release workflow's dedicated write-enabled job.
+
 To prepare a private draft, run the Release workflow manually from GitHub Actions. It builds and verifies both native targets, then creates a draft release for the version in package.json.
 
 For a published release, update package.json and the lockfile, commit the version change, then push the matching `vX.Y.Z` tag. The release workflow builds the tagged source, uploads the installers and updater metadata, and generates release notes. A tag containing a suffix creates a prerelease.

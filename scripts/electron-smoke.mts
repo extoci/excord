@@ -36,7 +36,7 @@ const deadline = setTimeout(() => {
 }, 180000);
 deadline.unref();
 const application = await _electron.launch({ executablePath: require("electron"),
-    args: [...(process.platform === "linux" ? ["--no-sandbox", "--disable-gpu"] : []), resolve(process.env.EXCORD_SMOKE_APP ?? (process.argv.includes("--packaged") ? packagedApp : "."))],
+    args: [...(process.platform === "linux" ? ["--no-sandbox", "--disable-gpu", ...(process.argv.includes("--headless") ? ["--ozone-platform=headless"] : [])] : []), resolve(process.env.EXCORD_SMOKE_APP ?? (process.argv.includes("--packaged") ? packagedApp : "."))],
     env: environment, timeout: 30000 });
 console.log("[smoke] Electron launched");
 stopHungApplication = () => { application.process().kill(); };
@@ -47,6 +47,10 @@ application.on("console", message => { mainOutput = (mainOutput + message.text()
 application.process().stdout?.on("data", data => { mainOutput = (mainOutput + String(data)).slice(-16000); });
 application.process().stderr?.on("data", data => { mainOutput = (mainOutput + String(data)).slice(-16000); });
 try {
+    await application.evaluate(({ app, webContents }) => {
+        for (const contents of webContents.getAllWebContents()) contents.on("preload-error", (_event, _path, error) => console.error("[smoke] Preload failed", error.message));
+        app.on("web-contents-created", (_event, contents) => contents.on("preload-error", (_errorEvent, _path, error) => console.error("[smoke] Preload failed", error.message)));
+    });
     const page = await application.firstWindow();
     page.setDefaultTimeout(30000);
     console.log("[smoke] Window created");
@@ -55,7 +59,7 @@ try {
         errors.push(error.stack ?? error.message); console.error("[renderer error]", error.stack ?? error.message);
     });
     page.on("console", message => {
-        if (message.type() === "error" && /Excord|Vencord|Equicord/.test(message.text())) console.error("[renderer]", message.text().slice(0, 500));
+        if (message.type() === "error") console.error("[renderer]", message.text().slice(0, 500));
     });
     await page.waitForFunction(() => (globalThis as Record<string, unknown>).__excordProbe === "first", undefined, { timeout: 30000 });
     await page.waitForFunction(() => (globalThis as Record<string, unknown>).__excordNativeProbe === "native:first", undefined, { timeout: 30000 });
@@ -197,7 +201,7 @@ try {
     if (page) {
         await page.screenshot({ path: "test-results/electron-failure.png", timeout: 5000 }).catch(() => {});
         const state = await page.evaluate(() => ({ url: location.href, title: document.title, text: document.body?.innerText?.slice(0, 500),
-            native: typeof ExcordNative, modules: typeof ExcordModules, runtime: typeof Vencord, wrapper: typeof (globalThis as Record<string, unknown>).Excord,
+            native: typeof ExcordNative, upstreamNative: typeof VencordNative, modules: typeof ExcordModules, runtime: typeof Vencord, wrapper: typeof (globalThis as Record<string, unknown>).Excord,
             probe: (globalThis as Record<string, unknown>).__excordProbe,
             localIssues: typeof ExcordNative === "undefined" ? [] : ExcordNative.getLocalPlugins().issues })).catch(String);
         console.error(JSON.stringify({ state, errors, mainOutput }, null, 2));
