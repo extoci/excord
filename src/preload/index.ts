@@ -15,16 +15,13 @@ if (process.isMainFrame && isDiscordOrigin(location.href)) {
   installExcordBridge();
   contextBridge.exposeInMainWorld("VesktopNative", VesktopNative);
 
-  // While sandboxed, Electron "polyfills" these APIs as local variables.
-  // We have to pass them as arguments as they are not global
+  // Pass the sandbox APIs used by the bundled preload. Electron 45 removed
+  // Buffer and the immediate-timer globals that were previously passed here.
   Function(
     "require",
-    "Buffer",
     "process",
-    "clearImmediate",
-    "setImmediate",
     ipcRenderer.sendSync(IpcEvents.GET_VENCORD_PRELOAD_SCRIPT),
-  )(require, Buffer, process, clearImmediate, setImmediate);
+  )(require, process);
 
   webFrame.executeJavaScript(
     ipcRenderer.sendSync(IpcEvents.GET_VENCORD_RENDERER_SCRIPT),

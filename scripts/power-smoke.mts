@@ -57,19 +57,26 @@ async function throttling(expected: boolean) {
   }
   assert.equal(actual, expected, "Unexpected native background policy");
 }
+let stage = "bootstrap";
 try {
   const page = await application.firstWindow();
+  page.on("console", (message) => {
+    if (message.type() === "error")
+      console.error("[power] Renderer:", message.text().slice(0, 800));
+  });
   await page.waitForFunction(
     () => typeof Vencord !== "undefined" && document.readyState === "complete",
     undefined,
     { timeout: 30000 },
   );
+  stage = "native visibility";
   await useNativeVisibility(page);
   await throttling(true);
   await page.evaluate(() =>
     history.replaceState(history.state, "", location.href),
   );
   await throttling(true);
+  stage = "idle animation";
   await page.evaluate(
     await readFile(
       new URL("./fixtures/performance-workload.js", import.meta.url),
@@ -95,6 +102,7 @@ try {
   await application.evaluate(({ BrowserWindow }) =>
     BrowserWindow.getAllWindows()[0].show(),
   );
+  stage = "real-time connection";
   await page.evaluate(
     await readFile(
       new URL("./fixtures/realtime-workload.js", import.meta.url),
@@ -105,6 +113,7 @@ try {
   await application.evaluate(({ BrowserWindow }) =>
     BrowserWindow.getAllWindows()[0].hide(),
   );
+  stage = "hidden WebRTC echo";
   const echoed = await page.evaluate(
     () =>
       new Promise<string>((resolve, reject) => {
@@ -122,6 +131,7 @@ try {
       }),
   );
   assert.equal(echoed, "excord-hidden-realtime-probe");
+  stage = "active WebRTC animation";
   const frames = await page.evaluate(
     () => (globalThis as any).__excordWorkload.frames as number,
   );
@@ -132,6 +142,7 @@ try {
     )) > frames,
     "Active RTC must keep rendering at full speed",
   );
+  stage = "return to idle";
   await page.evaluate(() =>
     (globalThis as any).__excordTestPeers.forEach((peer: RTCPeerConnection) =>
       peer.close(),
@@ -166,6 +177,7 @@ try {
     (before) => (globalThis as any).__excordWorkload.frames > before,
     paused,
   );
+  stage = "settings change";
   await page.evaluate(() => {
     VesktopNative.settings.set(
       { ...VesktopNative.settings.get(), backgroundEfficiency: false },
@@ -180,11 +192,36 @@ try {
     );
   });
   await throttling(true);
-  await page.route("https://discord.com/__excord_frame_probe", (route) =>
-    route.fulfill({
+  stage = "subframe isolation";
+  // Test frame isolation on a mocked same-origin host. The live login page's
+  // frame-src policy rejects synthetic frames before their preload can run.
+  // Both responses are local; browser CSP enforcement and sandboxing stay on.
+  let hostFulfilled = false;
+  let probeFulfilled = false;
+  await page.route("https://discord.com/__excord_isolation_host", (route) => {
+    hostFulfilled = true;
+    return route.fulfill({
+      contentType: "text/html",
+      body: "<!doctype html><title>Local isolation host</title><body>Local host</body>",
+    });
+  });
+  await page.route("https://discord.com/__excord_frame_probe", (route) => {
+    probeFulfilled = true;
+    return route.fulfill({
       contentType: "text/html",
       body: "<!doctype html><body>Frame probe</body>",
-    }),
+    });
+  });
+  await page.goto("https://discord.com/__excord_isolation_host");
+  assert.equal(
+    hostFulfilled,
+    true,
+    "The isolation host must use the local response",
+  );
+  assert.equal(
+    await page.evaluate(() => typeof ExcordNative),
+    "object",
+    "The main frame must retain its native bridge",
   );
   await page.evaluate(() => {
     const frame = document.createElement("iframe");
@@ -195,6 +232,11 @@ try {
     .frameLocator('iframe[src$="__excord_frame_probe"]')
     .getByText("Frame probe")
     .waitFor();
+  assert.equal(
+    probeFulfilled,
+    true,
+    "The frame probe must use the local response",
+  );
   const frame = page
     .frames()
     .find((frame) => frame.url().endsWith("/__excord_frame_probe"))!;
@@ -222,33 +264,54 @@ try {
   );
   console.log("Power and real-time protection checks passed", report);
 } catch (error) {
+  console.error("[power] Failed stage:", stage, error);
   const page = application.windows()[0];
   console.error(
     "[power] Native state",
-    await application.evaluate(({ BrowserWindow }) =>
-      BrowserWindow.getAllWindows().map((win) => ({
-        visible: win.isVisible(),
-        background: win.webContents.getBackgroundThrottling(),
-        preference:
-          win.webContents.getLastWebPreferences().backgroundThrottling,
-      })),
-    ),
+    await application
+      .evaluate(({ BrowserWindow }) =>
+        BrowserWindow.getAllWindows().map((win) => ({
+          visible: win.isVisible(),
+          background: win.webContents.getBackgroundThrottling(),
+          preference:
+            win.webContents.getLastWebPreferences().backgroundThrottling,
+        })),
+      )
+      .catch(String),
   );
   if (page) {
-    const session = await page.context().newCDPSession(page);
-    const prototype = await session.send("Runtime.evaluate", {
-      expression: "RTCPeerConnection.prototype",
-    });
-    const objects = await session.send("Runtime.queryObjects", {
-      prototypeObjectId: prototype.result.objectId!,
-    });
-    const states = await session.send("Runtime.callFunctionOn", {
-      objectId: objects.objects.objectId!,
-      functionDeclaration:
-        "function(){return this.map(p=>({state:p.connectionState,ice:p.iceConnectionState,signaling:p.signalingState}));}",
-      returnByValue: true,
-    });
-    console.error("[power] Peer states", states.result.value);
+    // Inspect only peers created by this fixture. Heap-wide queryObjects can
+    // crash Chromium and hide the original failure.
+    console.error(
+      "[power] Page state",
+      await page
+        .evaluate(() => ({
+          url: location.href,
+          hidden: document.hidden,
+          runtime: typeof Vencord,
+          native: typeof ExcordNative,
+          frames: (globalThis as any).__excordWorkload?.frames,
+          probe: Array.from(
+            document.querySelectorAll<HTMLIFrameElement>(
+              'iframe[src$="__excord_frame_probe"]',
+            ),
+          ).map((frame) => ({
+            src: frame.src,
+            display: getComputedStyle(frame).display,
+            visibility: getComputedStyle(frame).visibility,
+            width: frame.getBoundingClientRect().width,
+            height: frame.getBoundingClientRect().height,
+          })),
+          peers: (globalThis as any).__excordTestPeers?.map(
+            (peer: RTCPeerConnection) => ({
+              state: peer.connectionState,
+              ice: peer.iceConnectionState,
+              signaling: peer.signalingState,
+            }),
+          ),
+        }))
+        .catch(String),
+    );
   }
   throw error;
 } finally {
