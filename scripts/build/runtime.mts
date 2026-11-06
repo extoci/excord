@@ -3,8 +3,8 @@ import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { writeDependencyLicenses } from "./licenses.mts";
+import { supportNumericChunkIds } from "./chunkIds.mts";
 import { optimizePatcher } from "./optimizePatcher.mts";
-import { normalizeChunkIds } from "./normalizeChunkIds.mts";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const vendor = join(root, "vendor/equicord");
@@ -39,7 +39,7 @@ const bridge: Plugin = {
     name: "excord-runtime",
     setup(ctx) {
         ctx.onLoad({ filter: /[/\\]src[/\\]webpack[/\\]webpack\.ts$/ }, async ({ path }) => ({
-            contents: normalizeChunkIds(await readFile(path, "utf8")),
+            contents: supportNumericChunkIds(await readFile(path, "utf8")),
             loader: "ts", resolveDir: dirname(path)
         }));
         ctx.onLoad({ filter: /[/\\]src[/\\]webpack[/\\]patchWebpack\.ts$/ }, async ({ path }) => ({
