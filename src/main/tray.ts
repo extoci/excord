@@ -13,6 +13,7 @@ import { createArgumentsWindow } from "./arguments";
 import { createArRPCWindow } from "./arrpcWindow";
 import { AppEvents } from "./events";
 import { Settings } from "./settings";
+import { updateExcordFromTray } from "./trayUpdater";
 import { resolveAssetPath } from "./userAssets";
 import { clearData } from "./utils/clearData";
 import { downloadVencordAsar } from "./utils/vencordLoader";
@@ -225,6 +226,7 @@ export async function initTray(win: BrowserWindow, setIsQuitting: (val: boolean)
                     { id: 5, label: "Launch Arguments", enabled: true, visible: true },
                     { id: 10, label: "Configure Rich Presence", enabled: true, visible: true },
                     { id: 12, type: "separator" as const, enabled: true, visible: true },
+                    { id: 13, label: "Update Excord", enabled: true, visible: true },
                     { id: 3, label: "Verify runtime and restart", enabled: true, visible: true },
                     { id: 4, label: "Reset Excord", enabled: true, visible: true },
                     { id: 7, type: "separator" as const, enabled: true, visible: true },
@@ -271,6 +273,9 @@ export async function initTray(win: BrowserWindow, setIsQuitting: (val: boolean)
                                         `Could not download Equicord:\n\n${err instanceof Error ? err.message : String(err)}`
                                     );
                                 });
+                            break;
+                        case 13: // update Excord without the renderer
+                            updateExcordFromTray();
                             break;
                         case 4: // reset Excord
                             clearData(win);
@@ -335,6 +340,10 @@ export async function initTray(win: BrowserWindow, setIsQuitting: (val: boolean)
             click: createArRPCWindow
         },
         { type: "separator" },
+        {
+            label: "Update Excord",
+            click: updateExcordFromTray
+        },
         {
             label: "Verify runtime and restart",
             async click() {
