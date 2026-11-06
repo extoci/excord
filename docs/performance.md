@@ -28,6 +28,8 @@ The runtime report separates actual logged-out Discord idle CPU from a synthetic
 
 Playwright normally forces focus/visibility. The benchmark explicitly clears the override on the driver's own CDP session after navigation. Clearing a separate CDP session is insufficient. `scripts/utils/nativeVisibility.mts` checks the pinned driver's interface and fails if it changes. The power integration test verifies actual visibility and suspended/resumed animation before results are accepted. Profiling runs are marked separately and must not be pooled with unprofiled timing samples.
 
+The power smoke test observes a visible animation frame after enabling real-time scheduling before hiding the window. It then requires another frame while hidden within five seconds, polling with timers so a stalled animation cannot hang the test. This is a functional rendering check, not a frame-rate measurement. Idle animation must still pause during its one-second sample, and the native throttling state and hidden WebRTC echo remain separate assertions.
+
 Linux can use `--headless` with a software renderer. Record that environment and do not extrapolate its CPU or memory values to a hardware-accelerated Mac or Windows desktop.
 
 ## Patcher comparison

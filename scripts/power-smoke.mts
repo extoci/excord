@@ -110,6 +110,17 @@ try {
     ),
   );
   await throttling(false);
+  stage = "visible WebRTC animation";
+  // show() and the native throttling setter return before compositor updates
+  // arrive. Observe a resumed frame before starting the hidden-rendering check.
+  const visibleFrames = await page.evaluate(
+    () => (globalThis as any).__excordWorkload.frames as number,
+  );
+  await page.waitForFunction(
+    (before) => !document.hidden && (globalThis as any).__excordWorkload.frames > before,
+    visibleFrames,
+    { polling: 100, timeout: 5000 },
+  );
   await application.evaluate(({ BrowserWindow }) =>
     BrowserWindow.getAllWindows()[0].hide(),
   );
@@ -135,12 +146,12 @@ try {
   const frames = await page.evaluate(
     () => (globalThis as any).__excordWorkload.frames as number,
   );
-  await delay(1000);
-  assert.ok(
-    (await page.evaluate(
-      () => (globalThis as any).__excordWorkload.frames as number,
-    )) > frames,
-    "Active RTC must keep rendering at full speed",
+  // Poll with timers rather than rAF, so a paused compositor fails within the
+  // bound. This checks rendering resumes, not a frame-rate performance target.
+  await page.waitForFunction(
+    (before) => (globalThis as any).__excordWorkload.frames > before,
+    frames,
+    { polling: 100, timeout: 5000 },
   );
   stage = "return to idle";
   await page.evaluate(() =>
