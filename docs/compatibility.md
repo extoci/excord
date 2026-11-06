@@ -42,6 +42,8 @@ The initial live Electron smoke test loaded 381 plugin definitions in total, inc
 
 Excord bundles the exact Equicord revision in `upstream.lock.json`. It does not fetch a different runtime at startup or run Equicord's independent updater. Excord releases update the desktop app and bundled catalog together. Excord does not host a plugin catalog service.
 
+Discord now emits unquoted numeric lazy chunk IDs as well as quoted IDs. The runtime build applies a checked transformation to the pinned chunk loader so it requests both formats before requiring the entry point. This fixes loading the native guild sidebar for Favorites. Regression tests execute the real upstream loader for both formats; the vendor source and revision remain unchanged.
+
 ## Dependency refresh, 2026-11-03
 
 The bundled runtime is now [Equicord 1.15.15.0 at 00abcbee](https://github.com/Equicord/Equicord/commit/00abcbeea2ddf4317e02843418f267db62bcb913), including [Vencord 1.15.15 at 8d64c8be](https://github.com/Vencord/Vencord/commit/8d64c8be7e68616f8f116a6fff9480051aa2a0c5). GitHub's ancestry comparison confirms that Vencord commit is included, rather than overlaid as a second runtime. The desktop source incorporates the source changes from [Equibop 3.3.2](https://github.com/Equicord/Equibop/releases/tag/v3.3.2), derived from Vesktop 1.6.8. Excord keeps its own packaging, updater, RPC, settings, and recovery behavior.
