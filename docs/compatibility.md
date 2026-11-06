@@ -42,7 +42,7 @@ The initial live Electron smoke test loaded 381 plugin definitions in total, inc
 
 Excord bundles the exact Equicord revision in `upstream.lock.json`. It does not fetch a different runtime at startup or run Equicord's independent updater. Excord releases update the desktop app and bundled catalog together. Excord does not host a plugin catalog service.
 
-Discord now emits unquoted numeric lazy chunk IDs as well as quoted IDs. The runtime build applies a checked transformation to the pinned chunk loader so it requests both formats before requiring the entry point. This fixes loading the native guild sidebar for Favorites. Regression tests execute the real upstream loader for both formats; the vendor source and revision remain unchanged.
+Discord now emits unquoted numeric lazy chunk IDs as well as quoted IDs. The runtime build applies a checked transformation to the pinned chunk loader so it requests both formats before requiring the entry point. Numeric IDs remain numbers because Discord's URL resolver uses strict numeric comparisons; converting them to strings requests `undefined.js`. Named chunk IDs remain strings. This fixes loading the native guild sidebar for Favorites. Regression tests execute the real upstream loader for both formats; the vendor source and revision remain unchanged.
 
 ## Dependency refresh, 2026-11-03
 
