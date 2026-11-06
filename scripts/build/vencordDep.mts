@@ -18,6 +18,15 @@ const names: Record<string, string> = {
 export default globalExternalsWithRegExp({
     getModuleInfo(modulePath) {
         const path = modulePath.replace("@equicord/types/", "");
+        // Subpath imports need the module namespace, not an identically named
+        // export from the barrel (e.g. Components.Heading is a function).
+        // The bundled runtime exposes these exact namespaces for local plugins.
+        if (path.startsWith("components/")) {
+            return {
+                varName: `ExcordModules[${JSON.stringify("@" + path)}]`,
+                type: "cjs"
+            };
+        }
         let varName = names[path] as string | undefined;
         if (!varName) {
             const altMapping = names[path.split("/")[0]] as string | undefined;

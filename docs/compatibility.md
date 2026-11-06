@@ -58,3 +58,7 @@ Verification uses unit tests, both type checkers, the runtime/desktop build, RPC
 ## Electron 45 sandbox startup
 
 Electron 45 removed Buffer, setImmediate, and clearImmediate from sandboxed preloads. Excord's wrapper no longer references or passes those unused globals when evaluating the bundled preload; it passes only Electron's require and process APIs. The regression test bundles the real preload and executes it in a context without the removed globals, while checking that unrelated pages and subframes receive no bridge or runtime. The accountless Electron smoke test also records preload failures so a successful Discord page load cannot hide a failed Excord bootstrap.
+
+The desktop renderer resolves component subpath imports through Excord's module registry. The components barrel can expose a legacy function with the same name as a module, so it cannot supply that module's named exports.
+
+`scripts/build/chunkIds.mts` applies a checked transformation to the pinned runtime's shared chunk loader. Discord's November 6 payload uses unquoted numeric IDs for GuildSidebar chunks; the original loader only extracted quoted IDs. The transformation accepts both formats and preserves the existing entry-point loading behavior. Review it when changing the upstream pin. Regression tests execute the transformed upstream loader with both formats and verify that all chunks load before the entry point runs.

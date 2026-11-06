@@ -208,6 +208,6 @@ export default ErrorBoundary.wrap(
     },
     {
         message:
-            "Failed to render the Excord Settings tab. If this issue persists, try to right click the Excord tray icon, then click 'Repair Equicord'. And make sure your Excord is up to date."
+            "Failed to render the Excord Settings tab. Right-click the Excord tray icon, then click 'Verify runtime and restart'. If this issue persists, install the latest Excord release and report the error."
     }
 );
