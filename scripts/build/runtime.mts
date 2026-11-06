@@ -3,6 +3,7 @@ import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { writeDependencyLicenses } from "./licenses.mts";
+import { supportNumericChunkIds } from "./chunkIds.mts";
 import { optimizePatcher } from "./optimizePatcher.mts";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -37,6 +38,10 @@ modules["~plugins"] = "~plugins";
 const bridge: Plugin = {
     name: "excord-runtime",
     setup(ctx) {
+        ctx.onLoad({ filter: /[/\\]src[/\\]webpack[/\\]webpack\.ts$/ }, async ({ path }) => ({
+            contents: supportNumericChunkIds(await readFile(path, "utf8")),
+            loader: "ts", resolveDir: dirname(path)
+        }));
         ctx.onLoad({ filter: /[/\\]src[/\\]webpack[/\\]patchWebpack\.ts$/ }, async ({ path }) => ({
             contents: optimizePatcher(await readFile(path, "utf8"), join(root, "src/excord/patchPrefilter.ts")),
             loader: "ts", resolveDir: dirname(path)
