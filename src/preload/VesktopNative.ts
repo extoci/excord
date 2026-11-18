@@ -72,7 +72,10 @@ export const VesktopNative = {
     },
     settings: {
         get: () => sendSync<Settings>(IpcEvents.GET_SETTINGS),
-        set: (settings: Settings, path?: string) => invoke<void>(IpcEvents.SET_SETTINGS, settings, path)
+        set: (settings: Settings, path?: string) => invoke<void>(IpcEvents.SET_SETTINGS, settings, path),
+        onChange: (callback: (settings: Settings) => void) => {
+            ipcRenderer.on(IpcEvents.SETTINGS_CHANGED, (_event, settings: Settings) => callback(settings));
+        }
     },
     spellcheck: {
         getAvailableLanguages: () => sendSync<string[]>(IpcEvents.SPELLCHECK_GET_AVAILABLE_LANGUAGES),

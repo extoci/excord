@@ -65,6 +65,10 @@ if (IS_DEV) {
 }
 
 handleSync(IpcEvents.GET_SETTINGS, () => Settings.plain);
+Settings.addGlobalChangeListener(settings => {
+    if (mainWin && !mainWin.isDestroyed() && !mainWin.webContents.isDestroyed())
+        mainWin.webContents.send(IpcEvents.SETTINGS_CHANGED, settings);
+});
 handleSync(IpcEvents.GET_VERSION, () => app.getVersion());
 handleSync(IpcEvents.GET_GIT_HASH, () => EQUIBOP_GIT_HASH);
 handleSync(IpcEvents.GET_ENABLE_HARDWARE_ACCELERATION, () => enableHardwareAcceleration);

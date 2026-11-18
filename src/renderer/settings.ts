@@ -6,12 +6,13 @@
 
 import { useEffect, useReducer } from "@equicord/types/webpack/common";
 import { SettingsStore } from "shared/utils/SettingsStore";
+import { syncSettings } from "shared/utils/syncSettings";
 
 import { VesktopLogger } from "./logger";
 import { localStorage } from "./utils";
 
 export const Settings = new SettingsStore(VesktopNative.settings.get());
-Settings.addGlobalChangeListener((o, p) => VesktopNative.settings.set(o, p));
+syncSettings(Settings, VesktopNative.settings.set, VesktopNative.settings.onChange);
 
 export function useSettings() {
     const [, update] = useReducer(x => x + 1, 0);
