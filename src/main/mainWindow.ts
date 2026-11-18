@@ -433,6 +433,10 @@ function createMainWindow() {
     removeVencordSettingsListeners();
 
     const win = (mainWin = new BrowserWindow(buildBrowserWindowOptions()));
+    win.once("closed", () => {
+        removeSettingsListeners();
+        removeVencordSettingsListeners();
+    });
     attachBackgroundPolicy(win);
     attachExcord(win);
 
