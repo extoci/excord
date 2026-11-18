@@ -83,6 +83,11 @@ function makeSettingsListenerHelpers<O extends object>(o: SettingsStore<O>) {
 const [addSettingsListener, removeSettingsListeners] = makeSettingsListenerHelpers(Settings);
 const [addVencordSettingsListener, removeVencordSettingsListeners] = makeSettingsListenerHelpers(VencordSettings);
 
+Settings.addChangeListener("tray", enable => {
+    if (!enable) destroyTray();
+    else if (mainWin && !mainWin.isDestroyed()) initTray(mainWin, q => (isQuitting = q));
+});
+
 type MenuItemList = Array<MenuItemConstructorOptions | false>;
 
 function initMenuBar(win: BrowserWindow) {
@@ -226,11 +231,6 @@ function initMenuBar(win: BrowserWindow) {
 }
 
 function initSettingsListeners(win: BrowserWindow) {
-    addSettingsListener("tray", enable => {
-        if (enable) initTray(win, q => (isQuitting = q));
-        else destroyTray();
-    });
-
     addSettingsListener("disableMinSize", disable => {
         if (disable) {
             // 0 no work
