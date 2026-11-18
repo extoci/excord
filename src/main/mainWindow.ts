@@ -47,6 +47,7 @@ import { isSafeMode } from "../excord/mode";
 import { exportDiagnostics, openProfileFolder, recordRecoveryEvent, restartExcord } from "./recovery";
 import { attachBackgroundPolicy } from "./background";
 import { restoreWindowMaximized, trackWindowState } from "./windowState";
+import { createSettingsWindow } from "./settingsWindow";
 
 let isQuitting = false;
 
@@ -130,8 +131,12 @@ function initMenuBar(win: BrowserWindow) {
                   },
                   {
                       label: "Settings",
-                      enabled: !isSafeMode,
                       accelerator: "CmdOrCtrl+,",
+                      click: createSettingsWindow
+                  },
+                  {
+                      label: "Discord Settings",
+                      enabled: !isSafeMode,
                       async click() {
                           sendRendererCommand(IpcCommands.NAVIGATE_SETTINGS);
                       }

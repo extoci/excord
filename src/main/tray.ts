@@ -13,6 +13,7 @@ import { createArgumentsWindow } from "./arguments";
 import { createArRPCWindow } from "./arrpcWindow";
 import { AppEvents } from "./events";
 import { Settings } from "./settings";
+import { createSettingsWindow } from "./settingsWindow";
 import { updateExcordFromTray } from "./trayUpdater";
 import { resolveAssetPath } from "./userAssets";
 import { clearData } from "./utils/clearData";
@@ -220,6 +221,7 @@ export async function initTray(win: BrowserWindow, setIsQuitting: (val: boolean)
                 nativeSNI.setStatusNotifierTitle("Excord");
 
                 const menuItems = [
+                    { id: 14, label: "Settings", enabled: true, visible: true },
                     { id: 1, label: win.isVisible() ? "Hide" : "Open", enabled: true, visible: true },
                     { id: 2, label: "About", enabled: true, visible: true },
                     { id: 11, type: "separator" as const, enabled: true, visible: true },
@@ -250,6 +252,9 @@ export async function initTray(win: BrowserWindow, setIsQuitting: (val: boolean)
 
                 nativeSNI.setStatusNotifierMenuClickCallback((id: number) => {
                     switch (id) {
+                        case 14:
+                            createSettingsWindow();
+                            break;
                         case 1: // open/hide
                             if (win.isVisible()) win.hide();
                             else win.show();
@@ -320,6 +325,7 @@ export async function initTray(win: BrowserWindow, setIsQuitting: (val: boolean)
     };
 
     const trayMenu = Menu.buildFromTemplate([
+        { label: "Settings", click: createSettingsWindow },
         {
             label: "Open",
             click() {

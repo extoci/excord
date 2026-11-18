@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'unsafe-inline'">
+    <title>Excord Settings</title>
+    <link rel="stylesheet" href="./common.css">
+    <style>
+        body { padding: 24px 32px; }
+        h1 { margin: 0; font-size: 1.5rem; font-weight: 600; }
+        h2 { font-size: 1rem; margin: 28px 0 8px; }
+        p, small { color: var(--fg-secondary); line-height: 1.4; }
+        p { font-size: .9rem; }
+        .row { display: flex; align-items: center; gap: 20px; padding: 14px 0; border-bottom: 1px solid var(--fg-semi-trans); }
+        .copy { flex: 1; }
+        small { display: block; margin-top: 5px; font-size: .8rem; }
+        input { width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--link); }
+        select, button { font: inherit; padding: 8px; border: 1px solid var(--fg-semi-trans); border-radius: 6px; background: var(--bg); color: var(--fg); }
+        select { max-width: 100%; margin: 8px 0; }
+        button { margin: 8px 8px 0 0; cursor: pointer; }
+        label:has(:disabled) { opacity: .55; }
+        #status { position: sticky; top: 0; background: var(--bg); color: var(--link); margin: 0; }
+    </style>
+</head>
+<body>
+    <h1>Excord Settings</h1>
+    <p>Desktop preferences, independent of Discord. Changes are saved automatically.</p>
+    <p>Hardware acceleration and Discord branch changes take effect after restarting Excord.</p>
+    <p id="status" role="status" aria-live="polite"></p>
+    <main id="settings"></main>
+    <script>
+        const api = window.ExcordSettingsNative;
+        const root = document.getElementById("settings");
+        const status = document.getElementById("status");
+        let current;
+        const controls = new Map();
+        function element(tag, text, parent) {
+            const node = document.createElement(tag);
+            if (text) node.textContent = text;
+            if (parent) parent.append(node);
+            return node;
+        }
+        async function act(action) {
+            status.textContent = "";
+            try { await action(); status.textContent = "Saved"; }
+            catch { status.textContent = "Couldn't save this change. Please try again."; }
+            try { update(await api.get()); } catch { status.textContent = "Couldn't load settings. Close and reopen this window to retry."; }
+        }
+        function picker(key, title, description, parent) {
+            const label = element("label", title, parent);
+            label.style.display = "block";
+            if (description) element("small", description, label);
+            const select = element("select", "", label);
+            for (const value of current.choices[key]) {
+                const option = element("option", value.replaceAll("_", " "), select);
+                option.value = value;
+            }
+            select.onchange = () => act(() => api.set(key, select.value));
+            controls.set(key, { input: select });
+        }
+        function build() {
+            element("h2", "Discord Branch", root);
+            picker("discordBranch", "Discord branch", "Requires a full restart.", root);
+            for (const [title, options] of Object.entries(current.sections)) {
+                element("h2", title, root);
+                for (const option of options) {
+                    if (option.invisible === current.platform) continue;
+                    const label = element("label", "", root);
+                    label.className = "row";
+                    const copy = element("span", option.title, label);
+                    copy.className = "copy";
+                    element("small", option.description, copy);
+                    const input = element("input", "", label);
+                    input.type = "checkbox";
+                    input.onchange = () => act(() => api.set(option.key, input.checked));
+                    controls.set(option.key, { input, rule: option.disabled });
+                }
+                if (title === "Notifications") {
+                    element("h2", "Rich Presence", root);
+                    const button = element("button", "Configure Rich Presence", root);
+                    button.onclick = () => act(() => api.open("richPresence"));
+                }
+                if (title === "Miscellaneous") picker("webRTCIPHandlingPolicy", "WebRTC IP Handling Policy", "Changing this may help with voice connection issues on some networks, most notably VPNs like Tailscale.", root);
+            }
+            element("h2", "Developer Options", root);
+            const button = element("button", "Launch Arguments", root);
+            button.onclick = () => act(() => api.open("arguments"));
+        }
+        function update(snapshot) {
+            current = snapshot;
+            if (!controls.size) build();
+            for (const [key, { input, rule }] of controls) {
+                if (input.type === "checkbox") input.checked = current.settings[key];
+                else input.value = current.settings[key];
+                input.disabled = !!rule && current.settings[rule.key] === rule.value;
+            }
+        }
+        api.onChange(update);
+        api.get().then(update).catch(() => { status.textContent = "Couldn't load settings. Close and reopen this window to retry."; });
+    </script>
+</body>
+</html>

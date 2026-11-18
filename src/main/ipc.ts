@@ -24,6 +24,7 @@ import {
     shell
 } from "electron";
 import { STATIC_DIR } from "shared/paths";
+import { applySettingsPatch } from "shared/settingsPatch";
 
 import { IpcEvents } from "../shared/IpcEvents";
 import { setBadgeCount } from "./appBadge";
@@ -83,7 +84,7 @@ handle(IpcEvents.ARRPC_OPEN_SETTINGS, () => {
 handleSync(IpcEvents.GET_PLATFORM_SPOOF_INFO, () => getPlatformSpoofInfo());
 
 handle(IpcEvents.SET_SETTINGS, (_, settings: typeof Settings.store, path?: string) => {
-    Settings.setData(settings, path);
+    Settings.setData(applySettingsPatch(Settings.plain, settings, path), path);
 });
 
 handle(IpcEvents.RELAUNCH, async () => {
