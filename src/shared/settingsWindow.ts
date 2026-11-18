@@ -8,27 +8,24 @@ import { DesktopBooleanSettings } from "./desktopSettings";
 import type { Settings } from "./settings";
 
 export const SettingsChoices = {
-  discordBranch: ["stable", "canary", "ptb"],
-  webRTCIPHandlingPolicy: [
-    "default",
-    "default_public_interface_only",
-    "default_public_and_private_interfaces",
-    "disable_non_proxied_udp",
-  ],
+    discordBranch: ["stable", "canary", "ptb"],
+    webRTCIPHandlingPolicy: [
+        "default",
+        "default_public_interface_only",
+        "default_public_and_private_interfaces",
+        "disable_non_proxied_udp"
+    ]
 } as const;
 
-export function validateDesktopSetting(
-  key: unknown,
-  value: unknown,
-): key is keyof Settings {
-  if (typeof key !== "string") return false;
-  if (
-    Object.values(DesktopBooleanSettings)
-      .flat()
-      .some((option) => option.key === key)
-  )
-    return typeof value === "boolean";
-  if (key === "discordBranch" || key === "webRTCIPHandlingPolicy")
-    return SettingsChoices[key].some((choice) => choice === value);
-  return false;
+export function validateDesktopSetting(key: unknown, value: unknown): key is keyof Settings {
+    if (typeof key !== "string") return false;
+    if (
+        Object.values(DesktopBooleanSettings)
+            .flat()
+            .some(option => option.key === key)
+    )
+        return typeof value === "boolean";
+    if (key === "discordBranch" || key === "webRTCIPHandlingPolicy")
+        return SettingsChoices[key].some(choice => choice === value);
+    return false;
 }

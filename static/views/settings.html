@@ -1,103 +1,355 @@
 <!doctype html>
 <html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'unsafe-inline'">
-    <title>Excord Settings</title>
-    <link rel="stylesheet" href="./common.css">
-    <style>
-        body { padding: 24px 32px; }
-        h1 { margin: 0; font-size: 1.5rem; font-weight: 600; }
-        h2 { font-size: 1rem; margin: 28px 0 8px; }
-        p, small { color: var(--fg-secondary); line-height: 1.4; }
-        p { font-size: .9rem; }
-        .row { display: flex; align-items: center; gap: 20px; padding: 14px 0; border-bottom: 1px solid var(--fg-semi-trans); }
-        .copy { flex: 1; }
-        small { display: block; margin-top: 5px; font-size: .8rem; }
-        input { width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--link); }
-        select, button { font: inherit; padding: 8px; border: 1px solid var(--fg-semi-trans); border-radius: 6px; background: var(--bg); color: var(--fg); }
-        select { max-width: 100%; margin: 8px 0; }
-        button { margin: 8px 8px 0 0; cursor: pointer; }
-        label:has(:disabled) { opacity: .55; }
-        #status { position: sticky; top: 0; background: var(--bg); color: var(--link); margin: 0; }
-    </style>
-</head>
-<body>
-    <h1>Excord Settings</h1>
-    <p>Desktop preferences, independent of Discord. Changes are saved automatically.</p>
-    <p>Hardware acceleration and Discord branch changes take effect after restarting Excord.</p>
-    <p id="status" role="status" aria-live="polite"></p>
-    <main id="settings"></main>
-    <script>
-        const api = window.ExcordSettingsNative;
-        const root = document.getElementById("settings");
-        const status = document.getElementById("status");
-        let current;
-        const controls = new Map();
-        function element(tag, text, parent) {
-            const node = document.createElement(tag);
-            if (text) node.textContent = text;
-            if (parent) parent.append(node);
-            return node;
-        }
-        async function act(action) {
-            status.textContent = "";
-            try { await action(); status.textContent = "Saved"; }
-            catch { status.textContent = "Couldn't save this change. Please try again."; }
-            try { update(await api.get()); } catch { status.textContent = "Couldn't load settings. Close and reopen this window to retry."; }
-        }
-        function picker(key, title, description, parent) {
-            const label = element("label", title, parent);
-            label.style.display = "block";
-            if (description) element("small", description, label);
-            const select = element("select", "", label);
-            for (const value of current.choices[key]) {
-                const option = element("option", value.replaceAll("_", " "), select);
-                option.value = value;
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'none'; img-src data:; style-src 'self' 'unsafe-inline'; script-src 'unsafe-inline'"
+        />
+        <title>Excord Settings</title>
+        <link rel="stylesheet" href="./common.css" />
+        <style>
+            :root {
+                --surface: light-dark(#f5f6f7, #2b2d31);
+                --border: light-dark(#e3e5e8, #3f4147);
+                --accent: light-dark(#248046, #3ba55d);
             }
-            select.onchange = () => act(() => api.set(key, select.value));
-            controls.set(key, { input: select });
-        }
-        function build() {
-            element("h2", "Discord Branch", root);
-            picker("discordBranch", "Discord branch", "Requires a full restart.", root);
-            for (const [title, options] of Object.entries(current.sections)) {
-                element("h2", title, root);
-                for (const option of options) {
-                    if (option.invisible === current.platform) continue;
-                    const label = element("label", "", root);
-                    label.className = "row";
-                    const copy = element("span", option.title, label);
-                    copy.className = "copy";
-                    element("small", option.description, copy);
-                    const input = element("input", "", label);
-                    input.type = "checkbox";
-                    input.onchange = () => act(() => api.set(option.key, input.checked));
-                    controls.set(option.key, { input, rule: option.disabled });
+            body {
+                padding: 28px 32px 36px;
+                font-size: 14px;
+            }
+            header {
+                display: flex;
+                align-items: center;
+                gap: 14px;
+            }
+            .mark {
+                display: grid;
+                place-items: center;
+                width: 44px;
+                height: 44px;
+                border-radius: 13px;
+                background: var(--accent);
+                color: white;
+                font-size: 30px;
+                font-weight: 700;
+            }
+            h1 {
+                margin: 0 0 3px;
+                font-size: 23px;
+                font-weight: 650;
+                letter-spacing: -0.5px;
+            }
+            .subtitle {
+                margin: 0;
+                color: var(--fg-secondary);
+                font-size: 13px;
+            }
+            .status-card {
+                display: flex;
+                gap: 10px;
+                align-items: flex-start;
+                margin: 22px 0 0;
+                padding: 14px 16px;
+                border: 1px solid var(--border);
+                border-radius: 10px;
+                background: var(--surface);
+                color: var(--fg-secondary);
+                line-height: 1.5;
+                font-size: 12px;
+            }
+            .status-dot {
+                width: 7px;
+                height: 7px;
+                border-radius: 50%;
+                background: var(--accent);
+                margin-top: 5px;
+                flex-shrink: 0;
+            }
+            .status-card strong {
+                color: var(--fg);
+                display: block;
+                font-weight: 600;
+            }
+            h2 {
+                font-size: 10px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.9px;
+                color: var(--fg-secondary);
+                margin: 24px 2px 9px;
+            }
+            .section {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 10px;
+                padding: 0 16px;
+            }
+            .row {
+                display: flex;
+                align-items: center;
+                gap: 20px;
+                padding: 15px 0;
+                cursor: pointer;
+            }
+            .row + .row {
+                border-top: 1px solid var(--border);
+            }
+            .copy {
+                flex: 1;
+                font-size: 13px;
+                font-weight: 550;
+            }
+            small {
+                display: block;
+                color: var(--fg-secondary);
+                font-weight: 400;
+                line-height: 1.5;
+                margin-top: 4px;
+                font-size: 11px;
+            }
+            .toggle {
+                position: relative;
+                width: 40px;
+                height: 23px;
+                flex-shrink: 0;
+            }
+            .toggle input {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                opacity: 0;
+                cursor: pointer;
+            }
+            .track {
+                display: block;
+                width: 100%;
+                height: 100%;
+                border-radius: 20px;
+                background: #72767d;
+                transition: background 0.15s;
+                pointer-events: none;
+            }
+            .track::after {
+                content: "";
+                position: absolute;
+                width: 17px;
+                height: 17px;
+                top: 3px;
+                left: 3px;
+                border-radius: 50%;
+                background: white;
+                box-shadow: 0 1px 3px #0003;
+                transition: transform 0.15s;
+            }
+            input:checked + .track {
+                background: var(--accent);
+            }
+            input:checked + .track::after {
+                transform: translateX(17px);
+            }
+            input:focus-visible + .track,
+            select:focus-visible,
+            button:focus-visible {
+                outline: 2px solid var(--link);
+                outline-offset: 3px;
+            }
+            .picker {
+                display: block;
+                padding: 15px 0;
+                font-size: 13px;
+                font-weight: 550;
+            }
+            select,
+            button {
+                font: inherit;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                background: var(--bg);
+                color: var(--fg);
+            }
+            select {
+                appearance: none;
+                display: block;
+                width: 100%;
+                margin-top: 10px;
+                padding: 10px 34px 10px 12px;
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23808899' stroke-width='1.5'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+                background-repeat: no-repeat;
+                background-position: right 12px center;
+                cursor: pointer;
+            }
+            button {
+                padding: 10px 14px;
+                margin: 14px 0;
+                cursor: pointer;
+                font-size: 12px;
+                font-weight: 550;
+                transition: background 0.15s;
+            }
+            button:hover {
+                background: var(--surface);
+                border-color: var(--fg-secondary);
+            }
+            label:has(:disabled) {
+                opacity: 0.45;
+                cursor: not-allowed;
+            }
+            input:disabled {
+                cursor: not-allowed;
+            }
+            #status {
+                min-height: 18px;
+                margin: 10px 2px -8px;
+                font-size: 11px;
+                color: var(--accent);
+            }
+            #status.error {
+                color: light-dark(#b42318, #ff9696);
+            }
+            @media (prefers-reduced-motion: reduce) {
+                *,
+                *::after {
+                    transition: none !important;
                 }
-                if (title === "Notifications") {
-                    element("h2", "Rich Presence", root);
-                    const button = element("button", "Configure Rich Presence", root);
-                    button.onclick = () => act(() => api.open("richPresence"));
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <span class="mark" aria-hidden="true">e</span>
+            <div>
+                <h1>Excord Settings</h1>
+                <p class="subtitle">Your desktop, your preferences.</p>
+            </div>
+        </header>
+        <aside class="status-card">
+            <span class="status-dot" aria-hidden="true"></span>
+            <div>
+                <strong>Available even when Discord isn't.</strong>Changes save automatically. Restart Excord after
+                changing hardware acceleration or Discord branch.
+            </div>
+        </aside>
+        <p id="status" role="status" aria-live="polite"></p>
+        <main id="settings"></main>
+        <script>
+            const api = window.ExcordSettingsNative;
+            const root = document.getElementById("settings");
+            const status = document.getElementById("status");
+            let current;
+            const controls = new Map();
+            const choiceLabels = {
+                stable: "Stable",
+                canary: "Canary",
+                ptb: "PTB",
+                default: "Default",
+                default_public_interface_only: "Default Public Interface Only",
+                default_public_and_private_interfaces: "Default Public And Private Interfaces",
+                disable_non_proxied_udp: "Disable Non-Proxied UDP"
+            };
+            let feedbackTimer;
+            function element(tag, text, parent) {
+                const node = document.createElement(tag);
+                if (text) node.textContent = text;
+                if (parent) parent.append(node);
+                return node;
+            }
+            async function act(action) {
+                clearTimeout(feedbackTimer);
+                status.textContent = "";
+                status.className = "";
+                try {
+                    await action();
+                    status.textContent = "Saved";
+                } catch {
+                    status.className = "error";
+                    status.textContent = "Couldn't save this change. Please try again.";
                 }
-                if (title === "Miscellaneous") picker("webRTCIPHandlingPolicy", "WebRTC IP Handling Policy", "Changing this may help with voice connection issues on some networks, most notably VPNs like Tailscale.", root);
+                try {
+                    update(await api.get());
+                } catch {
+                    status.textContent = "Couldn't load settings. Close and reopen this window to retry.";
+                }
+                if (!status.className)
+                    feedbackTimer = setTimeout(() => {
+                        status.textContent = "";
+                    }, 2500);
             }
-            element("h2", "Developer Options", root);
-            const button = element("button", "Launch Arguments", root);
-            button.onclick = () => act(() => api.open("arguments"));
-        }
-        function update(snapshot) {
-            current = snapshot;
-            if (!controls.size) build();
-            for (const [key, { input, rule }] of controls) {
-                if (input.type === "checkbox") input.checked = current.settings[key];
-                else input.value = current.settings[key];
-                input.disabled = !!rule && current.settings[rule.key] === rule.value;
+            function picker(key, title, description, parent) {
+                const label = element("label", title, parent);
+                label.className = "picker";
+                if (description) element("small", description, label);
+                const select = element("select", "", label);
+                for (const value of current.choices[key]) {
+                    const option = element("option", choiceLabels[value], select);
+                    option.value = value;
+                }
+                select.onchange = () => act(() => api.set(key, select.value));
+                controls.set(key, { input: select });
             }
-        }
-        api.onChange(update);
-        api.get().then(update).catch(() => { status.textContent = "Couldn't load settings. Close and reopen this window to retry."; });
-    </script>
-</body>
+            function build() {
+                function section(title) {
+                    element("h2", title, root);
+                    const container = element("div", "", root);
+                    container.className = "section";
+                    return container;
+                }
+                picker(
+                    "discordBranch",
+                    "Discord branch",
+                    "Choose which version of Discord to load. Requires a full restart.",
+                    section("Discord Branch")
+                );
+                for (const [title, options] of Object.entries(current.sections)) {
+                    const container = section(title);
+                    for (const option of options) {
+                        const label = element("label", "", container);
+                        label.className = "row";
+                        const copy = element("span", option.title, label);
+                        copy.className = "copy";
+                        element("small", option.description, copy);
+                        const toggle = element("span", "", label);
+                        toggle.className = "toggle";
+                        const input = element("input", "", toggle);
+                        input.type = "checkbox";
+                        const track = element("span", "", toggle);
+                        track.className = "track";
+                        track.setAttribute("aria-hidden", "true");
+                        input.onchange = () => act(() => api.set(option.key, input.checked));
+                        controls.set(option.key, { input, rule: option.disabled });
+                    }
+                    if (title === "Notifications") {
+                        const button = element("button", "Configure Rich Presence ↗", section("Rich Presence"));
+                        button.onclick = () => act(() => api.open("richPresence"));
+                    }
+                    if (title === "Miscellaneous")
+                        picker(
+                            "webRTCIPHandlingPolicy",
+                            "WebRTC IP Handling Policy",
+                            "Changing this may help with voice connection issues on some networks, most notably VPNs like Tailscale.",
+                            container
+                        );
+                }
+                const button = element("button", "Launch Arguments ↗", section("Developer Options"));
+                button.onclick = () => act(() => api.open("arguments"));
+            }
+            function update(snapshot) {
+                current = snapshot;
+                if (!controls.size) build();
+                for (const [key, { input, rule }] of controls) {
+                    if (input.type === "checkbox") input.checked = current.settings[key];
+                    else input.value = current.settings[key];
+                    input.disabled = !!rule && current.settings[rule.key] === rule.value;
+                }
+            }
+            api.onChange(update);
+            api.get()
+                .then(update)
+                .catch(() => {
+                    status.textContent = "Couldn't load settings. Close and reopen this window to retry.";
+                });
+        </script>
+    </body>
 </html>

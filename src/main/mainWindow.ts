@@ -451,8 +451,7 @@ function createMainWindow() {
 
         e.preventDefault();
 
-        if (process.platform === "darwin") app.hide();
-        else win.hide();
+        win.hide();
 
         return false;
     });
