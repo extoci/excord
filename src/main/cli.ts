@@ -12,6 +12,8 @@ import { IpcCommands, IpcEvents } from "shared/IpcEvents";
 import { stripIndent } from "shared/utils/text";
 import { parseArgs, ParseArgsOptionDescriptor } from "util";
 
+import { showWindow } from "./utils/showWindow";
+
 export let isQueryInstance = false;
 
 type Option = ParseArgsOptionDescriptor & {
@@ -329,12 +331,10 @@ function setupSecondInstanceHandler() {
             });
         } else {
             import("./mainWindow").then(({ mainWin, loadUrl }) => {
-                if (mainWin) {
+                if (mainWin && !mainWin.isDestroyed()) {
                     const link = commandLine.find(arg => arg.startsWith("discord://"));
                     if (link) loadUrl(link);
-                    if (mainWin.isMinimized()) mainWin.restore();
-                    if (!mainWin.isVisible()) mainWin.show();
-                    mainWin.focus();
+                    showWindow(mainWin);
                 }
             });
         }

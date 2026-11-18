@@ -17,6 +17,7 @@ import { createSettingsWindow } from "./settingsWindow";
 import { updateExcordFromTray } from "./trayUpdater";
 import { resolveAssetPath } from "./userAssets";
 import { clearData } from "./utils/clearData";
+import { showWindow } from "./utils/showWindow";
 import { downloadVencordAsar } from "./utils/vencordLoader";
 
 type TrayVariant = "tray" | "trayUnread" | "traySpeaking" | "trayIdle" | "trayMuted" | "trayDeafened";
@@ -257,7 +258,7 @@ export async function initTray(win: BrowserWindow, setIsQuitting: (val: boolean)
                             break;
                         case 1: // open/hide
                             if (win.isVisible()) win.hide();
-                            else win.show();
+                            else showWindow(win);
                             break;
                         case 2: // about
                             createAboutWindow();
@@ -307,7 +308,7 @@ export async function initTray(win: BrowserWindow, setIsQuitting: (val: boolean)
 
                 nativeSNI.setStatusNotifierActivateCallback(() => {
                     if (Settings.store.clickTrayToShowHide && win.isVisible()) win.hide();
-                    else win.show();
+                    else showWindow(win);
                 });
 
                 return;
@@ -321,7 +322,7 @@ export async function initTray(win: BrowserWindow, setIsQuitting: (val: boolean)
 
     onTrayClick = () => {
         if (Settings.store.clickTrayToShowHide && win.isVisible()) win.hide();
-        else win.show();
+        else showWindow(win);
     };
 
     const trayMenu = Menu.buildFromTemplate([
@@ -329,7 +330,7 @@ export async function initTray(win: BrowserWindow, setIsQuitting: (val: boolean)
         {
             label: "Open",
             click() {
-                win.show();
+                showWindow(win);
             }
         },
         {

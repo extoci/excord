@@ -15,11 +15,12 @@ import { join } from "path";
 
 import { DATA_DIR, SESSION_DATA_DIR } from "./constants";
 import { createFirstLaunchTour } from "./firstLaunch";
-import { createWindows } from "./mainWindow";
+import { createWindows, mainWin } from "./mainWindow";
 import { registerMediaPermissionsHandler } from "./mediaPermissions";
 import { registerScreenShareHandler } from "./screenShare";
 import { Settings, State } from "./settings";
 import { setAsDefaultProtocolClient } from "./utils/setAsDefaultProtocolClient";
+import { showWindow } from "./utils/showWindow";
 import { isDeckGameMode } from "./utils/steamOS";
 import { showStartupFailure } from "./recovery";
 import { isSafeMode } from "../excord/mode";
@@ -144,7 +145,8 @@ function init() {
         void bootstrap().catch(showStartupFailure);
 
         app.on("activate", () => {
-            if (BrowserWindow.getAllWindows().length === 0) void createWindows().catch(showStartupFailure);
+            if (!showWindow(mainWin) && BrowserWindow.getAllWindows().length === 0)
+                void createWindows().catch(showStartupFailure);
         });
     });
 }
@@ -160,7 +162,12 @@ export let darwinURL: string | undefined;
 app.on("open-url", (event, url) => {
     event.preventDefault();
     darwinURL = url;
-    if (app.isReady()) void import("./mainWindow").then(({ mainWin, loadUrl }) => { if (mainWin && !mainWin.isDestroyed()) loadUrl(url); });
+    if (app.isReady()) void import("./mainWindow").then(({ mainWin, loadUrl }) => {
+        if (mainWin && !mainWin.isDestroyed()) {
+            loadUrl(url);
+            showWindow(mainWin);
+        }
+    });
 });
 
 app.on("window-all-closed", () => {

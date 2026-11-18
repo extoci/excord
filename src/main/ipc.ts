@@ -37,6 +37,7 @@ import { Settings, State } from "./settings";
 import { enableHardwareAcceleration } from "./startup";
 import { handle, handleSync } from "./utils/ipcWrappers";
 import { PopoutWindows } from "./utils/popout";
+import { showWindow } from "./utils/showWindow";
 import { isDeckGameMode, showGamePage } from "./utils/steamOS";
 import { isValidVencordInstall } from "./utils/vencordLoader";
 import { VENCORD_DIR } from "./vencordDir";
@@ -120,8 +121,7 @@ function getWindow(e: IpcMainInvokeEvent, key?: string) {
 }
 
 handle(IpcEvents.FOCUS, () => {
-    mainWin.show();
-    mainWin.setSkipTaskbar(false);
+    if (showWindow(mainWin)) mainWin.setSkipTaskbar(false);
 });
 
 handle(IpcEvents.CLOSE, (e, key?: string) => {

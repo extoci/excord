@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta
             http-equiv="Content-Security-Policy"
-            content="default-src 'none'; img-src data:; style-src 'self' 'unsafe-inline'; script-src 'unsafe-inline'"
+            content="default-src 'none'; img-src excord://static data:; style-src 'self' 'unsafe-inline'; script-src 'unsafe-inline'"
         />
         <title>Excord Settings</title>
         <link rel="stylesheet" href="./common.css" />
@@ -25,15 +25,9 @@
                 gap: 14px;
             }
             .mark {
-                display: grid;
-                place-items: center;
                 width: 44px;
                 height: 44px;
-                border-radius: 13px;
-                background: var(--accent);
-                color: white;
-                font-size: 30px;
-                font-weight: 700;
+                object-fit: contain;
             }
             h1 {
                 margin: 0 0 3px;
@@ -219,7 +213,7 @@
     </head>
     <body>
         <header>
-            <span class="mark" aria-hidden="true">e</span>
+            <img class="mark" src="excord://static/icon.png" alt="" width="44" height="44" />
             <div>
                 <h1>Excord Settings</h1>
                 <p class="subtitle">Your desktop, your preferences.</p>
