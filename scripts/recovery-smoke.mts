@@ -143,6 +143,7 @@ try {
     timeout: 30000,
   });
   await safePage.waitForLoadState("domcontentloaded");
+  await safePage.locator('input[name="email"]').waitFor();
   assert.equal(
     await safePage.evaluate(
       () => typeof (globalThis as Record<string, unknown>).Vencord,

@@ -61,6 +61,16 @@ try {
     page.on("console", message => {
         if (message.type() === "error") console.error("[renderer]", message.text().slice(0, 500));
     });
+    await page.waitForFunction(() => typeof Vencord !== "undefined" && typeof Vencord.Webpack.wreq?.d === "function");
+    const startupExports = await page.evaluate(() => {
+        const exports: { label?: string; Logger?: ErrorConstructor } = {};
+        Vencord.Webpack.wreq.d(exports, { label: String.bind(null, "libdiscore") }, { Logger: Error });
+        return { label: exports.label, constructorExported: exports.Logger === Error };
+    });
+    assert.deepEqual(startupExports, { label: "libdiscore", constructorExported: true },
+        "The bundled Webpack patcher must preserve getter and value exports used by Discord startup");
+    await page.locator('input[name="email"]').waitFor();
+    console.log("[smoke] Webpack preserved Discord's startup exports and the sign-in form rendered");
     await page.waitForFunction(() => (globalThis as Record<string, unknown>).__excordProbe === "first", undefined, { timeout: 30000 });
     await page.waitForFunction(() => (globalThis as Record<string, unknown>).__excordNativeProbe === "native:first", undefined, { timeout: 30000 });
     console.log("[smoke] Renderer and native probe loaded");
