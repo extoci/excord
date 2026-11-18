@@ -74,6 +74,27 @@ try {
     await page.waitForFunction(() => (globalThis as Record<string, unknown>).__excordProbe === "first", undefined, { timeout: 30000 });
     await page.waitForFunction(() => (globalThis as Record<string, unknown>).__excordNativeProbe === "native:first", undefined, { timeout: 30000 });
     console.log("[smoke] Renderer and native probe loaded");
+    await page.evaluate(() => {
+        const section = Vencord.Plugins.plugins.Settings.customSections
+            .map(getSection => getSection({})).find(({ section }) => section === "ExcordSettings");
+        if (!section) throw new Error("The Excord Settings section is not registered");
+        const host = Object.assign(document.createElement("div"), { id: "excord-settings-smoke", hidden: true });
+        document.body.append(host);
+        const { React, createRoot } = Vencord.Webpack.Common;
+        const root = createRoot(host);
+        (globalThis as Record<string, unknown>).__excordSettingsRoot = root;
+        root.render(React.createElement(section.element));
+    });
+    const settingsText = await page.waitForFunction(() => {
+        const text = document.getElementById("excord-settings-smoke")?.textContent ?? "";
+        return /Desktop settings|Failed to render/.test(text) && text;
+    }).then(handle => handle.jsonValue());
+    await page.evaluate(() => {
+        (globalThis as Record<string, { unmount(): void }>).__excordSettingsRoot.unmount();
+        document.getElementById("excord-settings-smoke")!.remove();
+    });
+    assert.doesNotMatch(settingsText, /Failed to render/, `The Excord Settings tab must render: ${settingsText.slice(0, 500)}`);
+    console.log("[smoke] Excord Settings tab rendered");
     const initial = await page.evaluate(() => ({
         native: typeof ExcordNative,
         experimentsEnabled: Vencord.Plugins.isPluginEnabled("Experiments"),
