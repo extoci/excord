@@ -119,6 +119,11 @@ await Promise.all([
         footer: { js: "//# sourceURL=VesktopArRPCSettingsPreload" }
     }),
     createContext({
+        ...NodeCommonOpts,
+        entryPoints: ["src/preload/settings.ts"],
+        outfile: "dist/js/settingsPreload.js"
+    }),
+    createContext({
         ...CommonOpts,
         globalName: "Excord",
         entryPoints: ["src/renderer/index.ts"],

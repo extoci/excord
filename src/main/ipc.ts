@@ -24,6 +24,7 @@ import {
     shell
 } from "electron";
 import { STATIC_DIR } from "shared/paths";
+import { applySettingsPatch } from "shared/settingsPatch";
 
 import { IpcEvents } from "../shared/IpcEvents";
 import { setBadgeCount } from "./appBadge";
@@ -36,6 +37,7 @@ import { Settings, State } from "./settings";
 import { enableHardwareAcceleration } from "./startup";
 import { handle, handleSync } from "./utils/ipcWrappers";
 import { PopoutWindows } from "./utils/popout";
+import { showWindow } from "./utils/showWindow";
 import { isDeckGameMode, showGamePage } from "./utils/steamOS";
 import { isValidVencordInstall } from "./utils/vencordLoader";
 import { VENCORD_DIR } from "./vencordDir";
@@ -63,6 +65,10 @@ if (IS_DEV) {
 }
 
 handleSync(IpcEvents.GET_SETTINGS, () => Settings.plain);
+Settings.addGlobalChangeListener(settings => {
+    if (mainWin && !mainWin.isDestroyed() && !mainWin.webContents.isDestroyed())
+        mainWin.webContents.send(IpcEvents.SETTINGS_CHANGED, settings);
+});
 handleSync(IpcEvents.GET_VERSION, () => app.getVersion());
 handleSync(IpcEvents.GET_GIT_HASH, () => EQUIBOP_GIT_HASH);
 handleSync(IpcEvents.GET_ENABLE_HARDWARE_ACCELERATION, () => enableHardwareAcceleration);
@@ -83,7 +89,7 @@ handle(IpcEvents.ARRPC_OPEN_SETTINGS, () => {
 handleSync(IpcEvents.GET_PLATFORM_SPOOF_INFO, () => getPlatformSpoofInfo());
 
 handle(IpcEvents.SET_SETTINGS, (_, settings: typeof Settings.store, path?: string) => {
-    Settings.setData(settings, path);
+    Settings.setData(applySettingsPatch(Settings.plain, settings, path), path);
 });
 
 handle(IpcEvents.RELAUNCH, async () => {
@@ -119,8 +125,7 @@ function getWindow(e: IpcMainInvokeEvent, key?: string) {
 }
 
 handle(IpcEvents.FOCUS, () => {
-    mainWin.show();
-    mainWin.setSkipTaskbar(false);
+    if (showWindow(mainWin)) mainWin.setSkipTaskbar(false);
 });
 
 handle(IpcEvents.CLOSE, (e, key?: string) => {

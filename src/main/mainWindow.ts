@@ -47,6 +47,7 @@ import { isSafeMode } from "../excord/mode";
 import { exportDiagnostics, openProfileFolder, recordRecoveryEvent, restartExcord } from "./recovery";
 import { attachBackgroundPolicy } from "./background";
 import { restoreWindowMaximized, trackWindowState } from "./windowState";
+import { createSettingsWindow } from "./settingsWindow";
 
 let isQuitting = false;
 
@@ -81,6 +82,11 @@ function makeSettingsListenerHelpers<O extends object>(o: SettingsStore<O>) {
 
 const [addSettingsListener, removeSettingsListeners] = makeSettingsListenerHelpers(Settings);
 const [addVencordSettingsListener, removeVencordSettingsListeners] = makeSettingsListenerHelpers(VencordSettings);
+
+Settings.addChangeListener("tray", enable => {
+    if (!enable) destroyTray();
+    else if (mainWin && !mainWin.isDestroyed()) initTray(mainWin, q => (isQuitting = q));
+});
 
 type MenuItemList = Array<MenuItemConstructorOptions | false>;
 
@@ -130,8 +136,12 @@ function initMenuBar(win: BrowserWindow) {
                   },
                   {
                       label: "Settings",
-                      enabled: !isSafeMode,
                       accelerator: "CmdOrCtrl+,",
+                      click: createSettingsWindow
+                  },
+                  {
+                      label: "Discord Settings",
+                      enabled: !isSafeMode,
                       async click() {
                           sendRendererCommand(IpcCommands.NAVIGATE_SETTINGS);
                       }
@@ -221,11 +231,6 @@ function initMenuBar(win: BrowserWindow) {
 }
 
 function initSettingsListeners(win: BrowserWindow) {
-    addSettingsListener("tray", enable => {
-        if (enable) initTray(win, q => (isQuitting = q));
-        else destroyTray();
-    });
-
     addSettingsListener("disableMinSize", disable => {
         if (disable) {
             // 0 no work
@@ -428,6 +433,10 @@ function createMainWindow() {
     removeVencordSettingsListeners();
 
     const win = (mainWin = new BrowserWindow(buildBrowserWindowOptions()));
+    win.once("closed", () => {
+        removeSettingsListeners();
+        removeVencordSettingsListeners();
+    });
     attachBackgroundPolicy(win);
     attachExcord(win);
 
@@ -446,8 +455,7 @@ function createMainWindow() {
 
         e.preventDefault();
 
-        if (process.platform === "darwin") app.hide();
-        else win.hide();
+        win.hide();
 
         return false;
     });
