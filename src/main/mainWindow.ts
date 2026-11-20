@@ -48,6 +48,7 @@ import { exportDiagnostics, openProfileFolder, recordRecoveryEvent, restartExcor
 import { attachBackgroundPolicy } from "./background";
 import { restoreWindowMaximized, trackWindowState } from "./windowState";
 import { createSettingsWindow } from "./settingsWindow";
+import { updateExcordFromTray } from "./trayUpdater";
 
 let isQuitting = false;
 
@@ -101,6 +102,17 @@ function initMenuBar(win: BrowserWindow) {
             click: createAboutWindow
         },
         {
+            id: "excord-update",
+            label: "Update Excord",
+            click: updateExcordFromTray
+        },
+        {
+            id: "excord-settings",
+            label: "Settings",
+            accelerator: "CmdOrCtrl+,",
+            click: createSettingsWindow
+        },
+        {
             id: "excord-safe-mode",
             label: isSafeMode ? "Restart with plugins enabled" : "Restart in safe mode",
             accelerator: "CmdOrCtrl+Alt+Shift+R",
@@ -133,11 +145,6 @@ function initMenuBar(win: BrowserWindow) {
             : ([
                   {
                       type: "separator"
-                  },
-                  {
-                      label: "Settings",
-                      accelerator: "CmdOrCtrl+,",
-                      click: createSettingsWindow
                   },
                   {
                       label: "Discord Settings",

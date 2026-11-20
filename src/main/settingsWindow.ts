@@ -4,15 +4,19 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { BrowserWindow, ipcMain, nativeTheme } from "electron";
+import { BrowserWindow, ipcMain, nativeTheme, shell } from "electron";
 import { join } from "path";
 import { DesktopBooleanSettings, isSettingVisible } from "shared/desktopSettings";
 import { IpcEvents } from "shared/IpcEvents";
-import { SettingsChoices, validateDesktopSetting } from "shared/settingsWindow";
+import { STATIC_DIR } from "shared/paths";
+import { SETTINGS_WINDOW_URL, SettingsChoices, validateDesktopSetting } from "shared/settingsWindow";
 
+import { RELEASES_URL } from "../excord/updateFeed";
+import { isUpdateAction } from "../excord/updates";
 import { createArgumentsWindow } from "./arguments";
 import { createArRPCWindow } from "./arrpcWindow";
 import { Settings } from "./settings";
+import { updates } from "./updater";
 import { loadView } from "./vesktopStatic";
 
 let settingsWindow: BrowserWindow | null = null;
@@ -31,20 +35,33 @@ function snapshot() {
     };
 }
 
-for (const channel of [IpcEvents.SETTINGS_WINDOW_GET, IpcEvents.SETTINGS_WINDOW_SET, IpcEvents.SETTINGS_WINDOW_OPEN]) {
-    ipcMain.handle(channel, (event, key: unknown, value: unknown) => {
+for (const channel of [
+    IpcEvents.SETTINGS_WINDOW_GET,
+    IpcEvents.SETTINGS_WINDOW_SET,
+    IpcEvents.SETTINGS_WINDOW_OPEN,
+    IpcEvents.SETTINGS_WINDOW_UPDATE_GET,
+    IpcEvents.SETTINGS_WINDOW_UPDATE_ACTION
+]) {
+    ipcMain.handle(channel, async (event, key: unknown, value: unknown) => {
         if (
             !settingsWindow ||
             settingsWindow.isDestroyed() ||
             event.sender !== settingsWindow.webContents ||
             event.senderFrame !== settingsWindow.webContents.mainFrame ||
-            event.senderFrame.url !== "excord://static/views/settings.html"
+            event.senderFrame.url !== SETTINGS_WINDOW_URL
         )
             throw new Error("Invalid settings sender");
         if (channel === IpcEvents.SETTINGS_WINDOW_GET) return snapshot();
+        if (channel === IpcEvents.SETTINGS_WINDOW_UPDATE_GET) return updates.snapshot();
+        if (channel === IpcEvents.SETTINGS_WINDOW_UPDATE_ACTION) {
+            if (!isUpdateAction(key)) throw new Error("Unknown update action");
+            await updates.action(key);
+            return;
+        }
         if (channel === IpcEvents.SETTINGS_WINDOW_OPEN) {
             if (key === "richPresence") createArRPCWindow();
             else if (key === "arguments") createArgumentsWindow();
+            else if (key === "releases") await shell.openExternal(RELEASES_URL);
             else throw new Error("Unknown settings window");
             return;
         }
@@ -67,7 +84,13 @@ export function createSettingsWindow() {
     }
     settingsWindow = new BrowserWindow({
         title: "Excord Settings",
+        center: true,
         backgroundColor: nativeTheme.shouldUseDarkColors ? "#313338" : "#ffffff",
+        ...(process.platform === "win32"
+            ? { icon: join(STATIC_DIR, "icon.ico") }
+            : process.platform === "linux"
+              ? { icon: join(STATIC_DIR, "icon.png") }
+              : {}),
         width: 680,
         height: 760,
         minWidth: 480,

@@ -13,6 +13,15 @@ contextBridge.exposeInMainWorld("ExcordSettingsNative", {
     set: (key: string, value: unknown) => ipcRenderer.invoke(IpcEvents.SETTINGS_WINDOW_SET, key, value),
     open: (name: string) => ipcRenderer.invoke(IpcEvents.SETTINGS_WINDOW_OPEN, name),
     onChange: (callback: (snapshot: unknown) => void) => {
-        ipcRenderer.on(IpcEvents.SETTINGS_WINDOW_CHANGED, (_event, snapshot: unknown) => callback(snapshot));
+        const listener = (_event: unknown, snapshot: unknown) => callback(snapshot);
+        ipcRenderer.on(IpcEvents.SETTINGS_WINDOW_CHANGED, listener);
+        return () => ipcRenderer.removeListener(IpcEvents.SETTINGS_WINDOW_CHANGED, listener);
+    },
+    getUpdateState: () => ipcRenderer.invoke(IpcEvents.SETTINGS_WINDOW_UPDATE_GET),
+    updateAction: (action: string) => ipcRenderer.invoke(IpcEvents.SETTINGS_WINDOW_UPDATE_ACTION, action),
+    onUpdateState: (callback: (state: unknown) => void) => {
+        const listener = (_event: unknown, state: unknown) => callback(state);
+        ipcRenderer.on(IpcEvents.SETTINGS_WINDOW_UPDATE_CHANGED, listener);
+        return () => ipcRenderer.removeListener(IpcEvents.SETTINGS_WINDOW_UPDATE_CHANGED, listener);
     }
 });

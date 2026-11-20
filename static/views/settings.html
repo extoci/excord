@@ -187,6 +187,81 @@
                 background: var(--surface);
                 border-color: var(--fg-secondary);
             }
+            button.primary {
+                background: var(--accent);
+                border-color: var(--accent);
+                color: white;
+            }
+            button.primary:hover {
+                filter: brightness(1.08);
+                background: var(--accent);
+                border-color: var(--accent);
+            }
+            .update-body {
+                padding: 15px 0;
+            }
+            .update-meta {
+                display: flex;
+                align-items: baseline;
+                justify-content: space-between;
+                gap: 12px;
+                flex-wrap: wrap;
+                font-size: 13px;
+                font-weight: 550;
+            }
+            .update-version {
+                font-size: 11px;
+                font-weight: 500;
+                color: var(--fg-secondary);
+            }
+            .update-error {
+                margin: 8px 0 0;
+                font-size: 12px;
+                line-height: 1.5;
+                color: light-dark(#b42318, #ff9696);
+            }
+            .update-progress {
+                display: block;
+                width: 100%;
+                height: 6px;
+                margin-top: 10px;
+                accent-color: var(--accent);
+            }
+            .update-actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin-top: 12px;
+            }
+            .update-actions button {
+                margin: 0;
+            }
+            .update-details {
+                margin-top: 12px;
+                font-size: 12px;
+                color: var(--fg-secondary);
+            }
+            .update-details summary {
+                cursor: pointer;
+                font-weight: 550;
+                color: var(--fg);
+            }
+            .update-notes {
+                margin: 8px 0 0;
+                padding: 10px 12px;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                background: var(--bg);
+                color: var(--fg-secondary);
+                font: 11px/1.5 inherit;
+                white-space: pre-wrap;
+                word-break: break-word;
+                max-height: 200px;
+                overflow: auto;
+            }
+            .update-body + .row {
+                border-top: 1px solid var(--border);
+            }
             label:has(:disabled) {
                 opacity: 0.45;
                 cursor: not-allowed;
@@ -222,17 +297,21 @@
         <aside class="status-card">
             <span class="status-dot" aria-hidden="true"></span>
             <div>
-                <strong>Available even when Discord isn't.</strong>Changes save automatically. Restart Excord after
-                changing hardware acceleration or Discord branch.
+                <strong>Available even when Discord isn't.</strong>Update Excord or change desktop preferences anytime.
+                Changes save automatically; restart Excord after changing hardware acceleration or Discord branch.
             </div>
         </aside>
         <p id="status" role="status" aria-live="polite"></p>
+        <section id="updates" aria-label="Updates"></section>
         <main id="settings"></main>
         <script>
             const api = window.ExcordSettingsNative;
+            const updatesRoot = document.getElementById("updates");
             const root = document.getElementById("settings");
             const status = document.getElementById("status");
             let current;
+            let updateState;
+            let updateError;
             const controls = new Map();
             const choiceLabels = {
                 stable: "Stable",
@@ -250,6 +329,141 @@
                 if (parent) parent.append(node);
                 return node;
             }
+            function addToggleRow(container, option) {
+                const label = element("label", "", container);
+                label.className = "row";
+                const copy = element("span", option.title, label);
+                copy.className = "copy";
+                element("small", option.description, copy);
+                const toggle = element("span", "", label);
+                toggle.className = "toggle";
+                const input = element("input", "", toggle);
+                input.type = "checkbox";
+                const track = element("span", "", toggle);
+                track.className = "track";
+                track.setAttribute("aria-hidden", "true");
+                input.onchange = () => act(() => api.set(option.key, input.checked));
+                controls.set(option.key, { input, rule: option.disabled });
+                return input;
+            }
+            function describeUpdate(state, error) {
+                if (!state && !error) return "Loading update status…";
+                if (!state) return "";
+                if (state.phase === "unsupported") return "Updates are available in installed Mac and Windows builds.";
+                if (state.phase === "idle") {
+                    if (state.error) return "";
+                    return state.lastCheckedAt ? "No update available." : "Updates haven’t been checked yet.";
+                }
+                if (state.phase === "checking") return "Checking for updates…";
+                if (state.phase === "available") return `Update available: ${state.version}`;
+                if (state.phase === "downloading") return `Downloading ${state.version}… ${Math.floor(state.progress)}%`;
+                if (state.phase === "ready") return `Update ready: ${state.version}. Restart when it suits you.`;
+                if (state.phase === "installing") return "Installing update…";
+                if (state.phase === "manual") return `Update ${state.version} needs a manual installation.`;
+                return "";
+            }
+            element("h2", "Updates", updatesRoot);
+            const updatesCard = element("div", "", updatesRoot);
+            updatesCard.className = "section";
+            const updateBody = element("div", "", updatesCard);
+            updateBody.className = "update-body";
+            const updateMeta = element("div", "", updateBody);
+            updateMeta.className = "update-meta";
+            const updateStatus = element("span", "Loading update status…", updateMeta);
+            updateStatus.setAttribute("role", "status");
+            updateStatus.setAttribute("aria-live", "polite");
+            const updateVersion = element("span", "", updateMeta);
+            updateVersion.className = "update-version";
+            const updateErrorEl = element("p", "", updateBody);
+            updateErrorEl.className = "update-error";
+            updateErrorEl.hidden = true;
+            const updateProgress = element("progress", "", updateBody);
+            updateProgress.className = "update-progress";
+            updateProgress.max = 100;
+            updateProgress.setAttribute("aria-label", "Update download");
+            updateProgress.hidden = true;
+            const updateActions = element("div", "", updateBody);
+            updateActions.className = "update-actions";
+            const updateDetails = element("details", "", updateBody);
+            updateDetails.className = "update-details";
+            updateDetails.hidden = true;
+            element("summary", "Release notes", updateDetails);
+            const updateNotes = element("pre", "", updateDetails);
+            updateNotes.className = "update-notes";
+            addToggleRow(updatesCard, {
+                key: "autoDownloadUpdates",
+                title: "Download updates automatically",
+                description:
+                    "Download updates in the background. Turn this off to choose which updates to download. Installation always waits for Restart and update."
+            });
+            async function runUpdateAction(action) {
+                updateError = undefined;
+                renderUpdate();
+                try {
+                    await api.updateAction(action);
+                } catch {
+                    updateError = "Couldn’t complete that action. Try again.";
+                    renderUpdate();
+                }
+            }
+            async function openReleases() {
+                updateError = undefined;
+                renderUpdate();
+                try {
+                    await api.open("releases");
+                } catch {
+                    updateError = "Couldn’t open the Releases page. Try again.";
+                    renderUpdate();
+                }
+            }
+            function renderUpdate() {
+                updateStatus.textContent = describeUpdate(updateState, updateError);
+                updateVersion.textContent = updateState ? `Current version: ${updateState.currentVersion}` : "";
+                const err = updateError || updateState?.error || "";
+                updateErrorEl.textContent = err;
+                updateErrorEl.hidden = !err;
+                const downloading = updateState?.phase === "downloading";
+                updateProgress.hidden = !downloading;
+                if (downloading) updateProgress.value = updateState.progress;
+                updateActions.textContent = "";
+                const phase = updateState?.phase;
+                if (phase === "idle" || phase === "available") {
+                    const check = element("button", updateState.error ? "Retry check" : "Check for updates", updateActions);
+                    check.onclick = () => runUpdateAction("check");
+                }
+                if (phase === "available") {
+                    const download = element("button", "Download update", updateActions);
+                    download.className = "primary";
+                    download.onclick = () => runUpdateAction("download");
+                }
+                if (phase === "downloading") {
+                    const cancel = element("button", "Cancel", updateActions);
+                    cancel.onclick = () => runUpdateAction("cancel");
+                }
+                if (phase === "ready") {
+                    const restart = element("button", "Restart and update", updateActions);
+                    restart.className = "primary";
+                    restart.onclick = () => runUpdateAction("restart");
+                }
+                const releases = element("button", "Release notes and installers ↗", updateActions);
+                releases.onclick = openReleases;
+                const notes = updateState?.notes || "";
+                updateDetails.hidden = !notes;
+                if (updateNotes.textContent !== notes) updateNotes.textContent = notes;
+            }
+            function receiveUpdate(next) {
+                if (!next || (updateState && updateState.revision > next.revision)) return;
+                updateState = next;
+                renderUpdate();
+            }
+            renderUpdate();
+            api.onUpdateState(receiveUpdate);
+            api.getUpdateState()
+                .then(receiveUpdate)
+                .catch(() => {
+                    updateError = "Couldn’t read update status. Close and reopen this window to retry.";
+                    renderUpdate();
+                });
             async function act(action) {
                 clearTimeout(feedbackTimer);
                 status.textContent = "";
@@ -283,7 +497,9 @@
                 select.onchange = () => act(() => api.set(key, select.value));
                 controls.set(key, { input: select });
             }
+            let built = false;
             function build() {
+                built = true;
                 function section(title) {
                     element("h2", title, root);
                     const container = element("div", "", root);
@@ -298,22 +514,7 @@
                 );
                 for (const [title, options] of Object.entries(current.sections)) {
                     const container = section(title);
-                    for (const option of options) {
-                        const label = element("label", "", container);
-                        label.className = "row";
-                        const copy = element("span", option.title, label);
-                        copy.className = "copy";
-                        element("small", option.description, copy);
-                        const toggle = element("span", "", label);
-                        toggle.className = "toggle";
-                        const input = element("input", "", toggle);
-                        input.type = "checkbox";
-                        const track = element("span", "", toggle);
-                        track.className = "track";
-                        track.setAttribute("aria-hidden", "true");
-                        input.onchange = () => act(() => api.set(option.key, input.checked));
-                        controls.set(option.key, { input, rule: option.disabled });
-                    }
+                    for (const option of options) addToggleRow(container, option);
                     if (title === "Notifications") {
                         const button = element("button", "Configure Rich Presence ↗", section("Rich Presence"));
                         button.onclick = () => act(() => api.open("richPresence"));
@@ -331,7 +532,7 @@
             }
             function update(snapshot) {
                 current = snapshot;
-                if (!controls.size) build();
+                if (!built) build();
                 for (const [key, { input, rule }] of controls) {
                     if (input.type === "checkbox") input.checked = current.settings[key];
                     else input.value = current.settings[key];
