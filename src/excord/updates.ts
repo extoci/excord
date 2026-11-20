@@ -1,4 +1,8 @@
-export type UpdateAction = "check" | "download" | "cancel" | "install-on-quit" | "keep-current" | "restart";
+export const UPDATE_ACTIONS = ["check", "download", "cancel", "install-on-quit", "keep-current", "restart"] as const;
+export type UpdateAction = (typeof UPDATE_ACTIONS)[number];
+export function isUpdateAction(value: unknown): value is UpdateAction {
+    return typeof value === "string" && (UPDATE_ACTIONS as readonly string[]).includes(value);
+}
 export interface UpdateSnapshot {
     revision: number;
     currentVersion: string;

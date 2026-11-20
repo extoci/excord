@@ -9,6 +9,7 @@ import { ExcordChannels } from "./channels";
 import { createLocalPlugin, LocalPluginCompiler } from "./compiler";
 import { isDiscordOrigin } from "./origin";
 import { isSafeMode } from "./mode";
+import { isUpdateAction } from "./updates";
 import { setRealtimeActivity } from "../main/background";
 import type { LocalPluginSnapshot, PerformanceSnapshot, PluginIssue, RuntimeModuleManifest } from "./types";
 
@@ -153,7 +154,8 @@ ipcMain.handle(ExcordChannels.exportDiagnostics, async event => {
 });
 ipcMain.handle(ExcordChannels.openSettings, async event => {
     assertSender(event.senderFrame);
-    await currentWindow?.webContents.executeJavaScript('Vencord.Webpack.Common.SettingsRouter.openUserSettings("ExcordSettings")');
+    const { createSettingsWindow } = await import("../main/settingsWindow");
+    createSettingsWindow();
 });
 
 for (const [channel, action] of [
@@ -172,7 +174,7 @@ for (const channel of [ExcordChannels.updateSnapshot, ExcordChannels.updateActio
         throw new Error("Updates require the main Excord window.");
     const { updates } = await import("../main/updater");
     if (channel === ExcordChannels.updateSnapshot) return updates.snapshot();
-    if (typeof action !== "string" || !["check", "download", "cancel", "install-on-quit", "keep-current", "restart"].includes(action))
+    if (!isUpdateAction(action))
         throw new Error("Unknown update action");
-    await updates.action(action as import("./updates").UpdateAction);
+    await updates.action(action);
 });

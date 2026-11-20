@@ -1,9 +1,11 @@
 import { expect, test } from "bun:test";
+import { readFile } from "node:fs/promises";
 
+import { isUpdateAction, UPDATE_ACTIONS } from "../src/excord/updates";
 import { DefaultExcordSettings } from "../src/shared/defaultSettings";
 import { DesktopBooleanSettings, isSettingDisabled, isSettingVisible } from "../src/shared/desktopSettings";
 import { applySettingsPatch } from "../src/shared/settingsPatch";
-import { SettingsChoices, validateDesktopSetting } from "../src/shared/settingsWindow";
+import { SETTINGS_WINDOW_URL, SettingsChoices, validateDesktopSetting } from "../src/shared/settingsWindow";
 
 test("desktop metadata contains unique boolean settings with usable descriptions", () => {
     const options = Object.values(DesktopBooleanSettings).flat();
@@ -38,6 +40,11 @@ test("desktop dependencies and macOS visibility remain declarative", () => {
 });
 
 test("standalone validation rejects unknown, empty, privileged and malformed settings", () => {
+    expect(validateDesktopSetting("autoDownloadUpdates", true)).toBe(true);
+    expect(validateDesktopSetting("autoDownloadUpdates", false)).toBe(true);
+    for (const value of [null, undefined, "true", 1, {}])
+        expect(validateDesktopSetting("autoDownloadUpdates", value)).toBe(false);
+
     for (const key of [
         "",
         null,
@@ -46,8 +53,7 @@ test("standalone validation rejects unknown, empty, privileged and malformed set
         "__proto__",
         "constructor",
         "audio",
-        "arRPCWebSocketCustomHost",
-        "autoDownloadUpdates"
+        "arRPCWebSocketCustomHost"
     ]) {
         expect(validateDesktopSetting(key, true)).toBe(false);
     }
@@ -56,6 +62,45 @@ test("standalone validation rejects unknown, empty, privileged and malformed set
         for (const value of ["", "invalid", true, null, undefined])
             expect(validateDesktopSetting(key, value)).toBe(false);
     }
+    for (const action of UPDATE_ACTIONS) expect(isUpdateAction(action)).toBe(true);
+    for (const action of ["", "auto-install", "quit", null, undefined, 1, {}])
+        expect(isUpdateAction(action)).toBe(false);
+});
+
+test("Excord settings and updates never require Discord's renderer to open", async () => {
+    const read = (path: string) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
+    const [mainWindow, tray, updater, service, settingsWindow, settingsHtml] = await Promise.all([
+        read("src/main/mainWindow.ts"),
+        read("src/main/tray.ts"),
+        read("src/main/updater.ts"),
+        read("src/excord/service.ts"),
+        read("src/main/settingsWindow.ts"),
+        read("static/views/settings.html")
+    ]);
+
+    for (const source of [mainWindow, tray, updater, service]) {
+        expect(source).not.toContain('openUserSettings("ExcordSettings")');
+    }
+
+    expect(mainWindow).toContain("click: createSettingsWindow");
+    expect(mainWindow).toContain("click: updateExcordFromTray");
+    expect(tray).toContain("createSettingsWindow");
+    expect(tray).toContain("updateExcordFromTray");
+
+    expect(updater).toContain("SETTINGS_WINDOW_URL");
+    expect(updater).toContain("SETTINGS_WINDOW_UPDATE_CHANGED");
+    expect(updater).toContain("createSettingsWindow()");
+    expect(settingsWindow).toContain("SETTINGS_WINDOW_URL");
+    expect(settingsWindow).toContain("SETTINGS_WINDOW_UPDATE_GET");
+    expect(settingsWindow).toContain("SETTINGS_WINDOW_UPDATE_ACTION");
+    expect(SETTINGS_WINDOW_URL).toBe("excord://static/views/settings.html");
+
+    expect(settingsHtml).toContain("api.getUpdateState()");
+    expect(settingsHtml).toContain("api.onUpdateState(");
+    expect(settingsHtml).toContain("api.updateAction(");
+    expect(settingsHtml).toContain('api.open("releases")');
+    expect(settingsHtml).toContain('"autoDownloadUpdates"');
+    expect(settingsHtml).not.toContain("innerHTML");
 });
 
 test("a stale Discord renderer cannot overwrite another preference when saving its changed path", () => {

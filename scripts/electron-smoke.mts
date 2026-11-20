@@ -95,6 +95,45 @@ try {
     });
     assert.doesNotMatch(settingsText, /Failed to render/, `The Excord Settings tab must render: ${settingsText.slice(0, 500)}`);
     console.log("[smoke] Excord Settings tab rendered");
+    const standaloneWindow = application.waitForEvent("window");
+    const hasUpdateMenu = await application.evaluate(({ Menu, BrowserWindow }) => {
+        const menu = Menu.getApplicationMenu()!;
+        const settingsItem = menu.getMenuItemById("excord-settings");
+        const updateItem = menu.getMenuItemById("excord-update");
+        if (!settingsItem) throw new Error("The application menu must include standalone Excord Settings");
+        settingsItem.click(settingsItem, BrowserWindow.getAllWindows()[0], {} as KeyboardEvent);
+        return Boolean(updateItem);
+    });
+    assert.equal(hasUpdateMenu, true, "The application menu must include Update Excord");
+    const settingsPage = await standaloneWindow;
+    const standaloneErrors: string[] = [];
+    settingsPage.on("pageerror", error => standaloneErrors.push(error.message));
+    await settingsPage.waitForURL("excord://static/views/settings.html", { waitUntil: "domcontentloaded", timeout: 30000 });
+    await settingsPage.waitForFunction(() => {
+        const text = document.body?.textContent ?? "";
+        return text.includes("Current version:") && text.includes("Download updates automatically") && text.includes("Discord branch");
+    }, undefined, { timeout: 15000 });
+    const autoDownloadBefore = await page.evaluate(() => VesktopNative.settings.get().autoDownloadUpdates);
+    await settingsPage.locator("#updates label.row").click();
+    await page.waitForFunction(
+        expected => VesktopNative.settings.get().autoDownloadUpdates === expected,
+        !autoDownloadBefore,
+        { timeout: 10000 }
+    );
+    await settingsPage.locator("#updates label.row").click();
+    await page.waitForFunction(
+        expected => VesktopNative.settings.get().autoDownloadUpdates === expected,
+        autoDownloadBefore,
+        { timeout: 10000 }
+    );
+    assert.deepEqual(standaloneErrors, []);
+    await settingsPage.close();
+    const reopenedWindow = application.waitForEvent("window");
+    await page.evaluate(() => ExcordNative.openSettings());
+    const reopenedPage = await reopenedWindow;
+    await reopenedPage.waitForURL("excord://static/views/settings.html", { waitUntil: "domcontentloaded", timeout: 30000 });
+    await reopenedPage.close();
+    console.log("[smoke] Standalone Excord Settings window rendered updates and synced preferences");
     const initial = await page.evaluate(() => ({
         native: typeof ExcordNative,
         experimentsEnabled: Vencord.Plugins.isPluginEnabled("Experiments"),

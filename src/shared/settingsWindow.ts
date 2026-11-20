@@ -7,6 +7,8 @@
 import { DesktopBooleanSettings } from "./desktopSettings";
 import type { Settings } from "./settings";
 
+export const SETTINGS_WINDOW_URL = "excord://static/views/settings.html";
+
 export const SettingsChoices = {
     discordBranch: ["stable", "canary", "ptb"],
     webRTCIPHandlingPolicy: [
@@ -20,6 +22,7 @@ export const SettingsChoices = {
 export function validateDesktopSetting(key: unknown, value: unknown): key is keyof Settings {
     if (typeof key !== "string") return false;
     if (
+        key === "autoDownloadUpdates" ||
         Object.values(DesktopBooleanSettings)
             .flat()
             .some(option => option.key === key)

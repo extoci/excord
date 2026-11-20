@@ -8,6 +8,7 @@ import { CancellationToken } from "builder-util-runtime";
 import { app, BrowserWindow, net } from "electron";
 import { autoUpdater } from "electron-updater";
 import { IpcEvents } from "shared/IpcEvents";
+import { SETTINGS_WINDOW_URL } from "shared/settingsWindow";
 
 import { ExcordChannels } from "../excord/channels";
 import { isDiscordOrigin } from "../excord/origin";
@@ -15,6 +16,7 @@ import { resolveUpdateFeed } from "../excord/updateFeed";
 import { UpdateController } from "../excord/updates";
 import { AppEvents } from "./events";
 import { Settings, State } from "./settings";
+import { createSettingsWindow } from "./settingsWindow";
 import { handle } from "./utils/ipcWrappers";
 
 // Consent is owned by UpdateController, including after a cached download is reused.
@@ -44,8 +46,12 @@ export const updates = new UpdateController({
     }
 }, app.getVersion(), app.isPackaged && ["win32", "darwin"].includes(process.platform), state => {
     for (const win of BrowserWindow.getAllWindows()) {
-        if (!win.isDestroyed() && !win.webContents.isDestroyed() && isDiscordOrigin(win.webContents.getURL()))
+        if (win.isDestroyed() || win.webContents.isDestroyed()) continue;
+        const url = win.webContents.getURL();
+        if (isDiscordOrigin(url))
             win.webContents.send(ExcordChannels.updateState, state);
+        else if (url === SETTINGS_WINDOW_URL)
+            win.webContents.send(IpcEvents.SETTINGS_WINDOW_UPDATE_CHANGED, state);
     }
 }, State.store.updater?.lastCheckedAt, time => {
     State.store.updater ??= {};
@@ -73,8 +79,8 @@ app.on("will-quit", event => {
         updates.install(false);
     } else if (timer) clearTimeout(timer);
 });
-// Retained desktop API opens Settings, never a popup or a warning badge.
+// Retained desktop API opens the standalone Settings window, never Discord's renderer or a popup.
 handle(IpcEvents.UPDATER_IS_OUTDATED, () => false);
-handle(IpcEvents.UPDATER_OPEN, async event => {
-    await event.sender.executeJavaScript('Vencord.Webpack.Common.SettingsRouter.openUserSettings("ExcordSettings")');
+handle(IpcEvents.UPDATER_OPEN, () => {
+    createSettingsWindow();
 });
