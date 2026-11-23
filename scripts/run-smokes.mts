@@ -5,10 +5,13 @@ import { spawn } from "node:child_process";
 // state. Output is buffered per check and flushed on completion so the CI log
 // stays grouped instead of interleaved.
 
-type Check = { name: string; script: string; args?: string[]; timeoutMs?: number };
+type Check = { name: string; script: string; args?: string[]; timeoutMs?: number; retries?: number };
 
 const CHECKS: Check[] = [
-    { name: "shutdown-packaged", script: "scripts/quit-smoke.mts", args: ["--packaged", "--refresh"] },
+    // The Windows-packaged executable is the one check that crashes under
+    // parallel load (dies mid-refresh); it passes sequentially and on other
+    // platforms, so it gets one retry to tell a real break from contention.
+    { name: "shutdown-packaged", script: "scripts/quit-smoke.mts", args: ["--packaged", "--refresh"], retries: 1 },
     { name: "shutdown-archive", script: "scripts/quit-smoke.mts", args: ["--archive", "--refresh"] },
     { name: "installer-persistence", script: "scripts/install-smoke.mts", timeoutMs: 7 * 60_000 },
     { name: "electron-dev", script: "scripts/electron-smoke.mts", timeoutMs: 5 * 60_000 },
@@ -22,6 +25,16 @@ const DEFAULT_TIMEOUT_MS = 3 * 60_000;
 const concurrency = Math.max(1, Number(process.env.EXCORD_SMOKE_CONCURRENCY) || 3);
 
 type Result = { name: string; code: number | null; forced: boolean; output: string; durationMs: number };
+
+async function retry(check: Check): Promise<Result> {
+    let last = await run(check);
+    for (let attempt = check.retries ?? 0; attempt > 0 && (last.code !== 0 || last.forced); attempt--) {
+        console.log(`\n[${check.name}] failed, retrying`);
+        const again = await run(check);
+        last = { ...again, output: last.output + `\n----- retry -----\n` + again.output, durationMs: last.durationMs + again.durationMs };
+    }
+    return last;
+}
 
 function run(check: Check): Promise<Result> {
     const startedAt = Date.now();
@@ -54,7 +67,7 @@ const running = new Set<Promise<Result>>();
 while (pending.length > 0 || running.size > 0) {
     while (pending.length > 0 && running.size < concurrency) {
         const check = pending.shift()!;
-        const promise = run(check);
+            const promise = retry(check);
         running.add(promise);
         void promise.then(() => running.delete(promise));
     }
