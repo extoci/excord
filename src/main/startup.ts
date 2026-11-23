@@ -119,6 +119,17 @@ function init() {
         disabledFeatures.add("WaylandWpColorManagerV1");
     }
 
+    if (process.platform === "win32") {
+        // Windows starves occluded windows: EcoQoS drops the renderer's
+        // scheduling priority and intensive wake-up throttling sinks hidden
+        // timers to 1/min after ~5 minutes, which kills Discord's gateway
+        // heartbeat. Refocusing a client that stale forces a full reload
+        // (~a minute) before it is usable again.
+        app.commandLine.appendSwitch("disable-renderer-backgrounding");
+        disabledFeatures.add("IntensiveWakeUpThrottling");
+        disabledFeatures.add("FreezingOnEnergySaver");
+    }
+
     disabledFeatures.forEach(feat => enabledFeatures.delete(feat));
 
     const enabledFeaturesArray = [...enabledFeatures].filter(Boolean);
