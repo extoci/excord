@@ -58,7 +58,10 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.4.0"
+      # macOS restores the install cache in ~7s; on Windows the archive
+      # unpack costs 25-40s, more than a cold `bun install`.
       - name: Restore Bun install cache
+        if: matrix.platform != 'win'
         id: cache-bun
         uses: actions/cache/restore@v4
         with:
@@ -125,7 +128,10 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.4.0"
+      # macOS restores the install cache in ~7s; on Windows the archive
+      # unpack costs 25-40s, more than a cold `bun install`.
       - name: Restore Bun install cache
+        if: matrix.platform != 'win'
         id: cache-bun
         uses: actions/cache/restore@v4
         with:
@@ -210,7 +216,10 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.4.0"
+      # macOS restores the install cache in ~7s; on Windows the archive
+      # unpack costs 25-40s, more than a cold `bun install`.
       - name: Restore Bun install cache
+        if: matrix.platform != 'win'
         id: cache-bun
         uses: actions/cache/restore@v4
         with:
@@ -280,7 +289,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Save Bun install cache
-        if: github.event_name != 'pull_request' && steps.cache-bun.outputs.cache-hit != 'true'
+        if: github.event_name != 'pull_request' && matrix.platform != 'win' && steps.cache-bun.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: ~/.bun/install/cache
