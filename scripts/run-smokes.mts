@@ -62,8 +62,13 @@ function run(check: Check): Promise<Result> {
     });
 }
 
+// Jobs that run a subset of the checks (e.g. the installer check lives in the
+// packaging job) name the ones to skip via EXCORD_SMOKE_SKIP.
+const skip = new Set((process.env.EXCORD_SMOKE_SKIP ?? "").split(",").map((name) => name.trim()).filter(Boolean));
+const enabled = CHECKS.filter((check) => !skip.has(check.name));
+
 const results: Result[] = [];
-const pending = CHECKS.filter((check) => !check.serial);
+const pending = enabled.filter((check) => !check.serial);
 const running = new Set<Promise<Result>>();
 
 while (pending.length > 0 || running.size > 0) {
@@ -81,7 +86,7 @@ while (pending.length > 0 || running.size > 0) {
     if (result.code !== 0 || result.forced) console.log(`[${result.name}] FAILED with code ${result.code}`);
 }
 
-for (const check of CHECKS.filter((check) => check.serial)) {
+for (const check of enabled.filter((check) => check.serial)) {
     const result = await retry(check);
     results.push(result);
     console.log(`\n===== ${result.name} (${(result.durationMs / 1000).toFixed(1)}s) =====`);

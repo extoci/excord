@@ -30,8 +30,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: ${{ matrix.name }}
+  verify:
+    name: ${{ matrix.name }} verification
     strategy:
       fail-fast: false
       matrix:
@@ -90,6 +90,89 @@ jobs:
         run: node --import tsx scripts/portal-smoke.mts
       - name: Exercise the RPC worker
         run: bun run test:rpc
+      - name: Build unpacked application
+        # The packaged checks only need the unpacked app directory; installers
+        # and archives are built by the parallel packaging job.
+        run: bun x electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --dir
+      - name: Exercise the packaged application archive
+        run: bun run check:package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: debug-symbols-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            dist/js/*.js
+            dist/js/*.css
+            dist/js/*.map
+            static/runtime/*.js
+            static/runtime/*.css
+            static/runtime/*.map
+            static/runtime/modules.json
+          if-no-files-found: error
+          retention-days: 14
+      # The packaged checks are independent: each spawns its own Electron
+      # instance under a unique EXCORD_USER_DATA_DIR. run-smokes.mts runs them
+      # three at a time and reports a summary; EXCORD_SMOKE_CONCURRENCY tunes it.
+      - name: Exercise packaged application checks
+        timeout-minutes: 10
+        env:
+          EXCORD_SMOKE_SKIP: installer-persistence
+        run: node --import tsx scripts/run-smokes.mts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-${{ matrix.platform }}-${{ matrix.arch }}
+          path: test-results/
+          if-no-files-found: ignore
+
+  package:
+    name: ${{ matrix.name }} packaging
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS Apple silicon
+            runner: macos-26
+            platform: mac
+            arch: arm64
+          - name: Windows x64
+            runner: windows-2025
+            platform: win
+            arch: x64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      # Development builds use ad-hoc signing without secrets, including on PRs.
+      CSC_FOR_PULL_REQUEST: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+      - name: Restore Bun install cache
+        id: cache-bun
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-${{ matrix.arch }}-bun-install-${{ hashFiles('bun.lock') }}
+      - name: Restore Electron packaging cache
+        id: cache-electron
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+            ~/Library/Caches/electron
+            ~/Library/Caches/electron-builder
+            ~\AppData\Local\electron\Cache
+            ~\AppData\Local\electron-builder\Cache
+          key: ${{ runner.os }}-${{ matrix.arch }}-electron-builder-${{ hashFiles('package.json', 'bun.lock') }}
+      - run: bun install --frozen-lockfile
+      - run: node node_modules/electron/install.js
+      - run: bun run build
       - name: Build installer and archive
         # Development artifacts are verified and thrown away, so they do not
         # need maximum compression. The macOS ZIP alone spent ~6 minutes at
@@ -115,31 +198,13 @@ jobs:
         env:
           EXCORD_MAC_SIGNING_CERTIFICATE: ${{ runner.temp }}/excord-update-certificate.pem
         run: node --import tsx scripts/check-mac-update-signing.mts
-      - name: Exercise the packaged application archive
-        run: bun run check:package
-      - uses: actions/upload-artifact@v4
-        with:
-          name: debug-symbols-${{ matrix.platform }}-${{ matrix.arch }}
-          path: |
-            dist/js/*.js
-            dist/js/*.css
-            dist/js/*.map
-            static/runtime/*.js
-            static/runtime/*.css
-            static/runtime/*.map
-            static/runtime/modules.json
-          if-no-files-found: error
-          retention-days: 14
-      # The packaged checks are independent: each spawns its own Electron
-      # instance under a unique EXCORD_USER_DATA_DIR. run-smokes.mts runs them
-      # three at a time and reports a summary; EXCORD_SMOKE_CONCURRENCY tunes it.
-      - name: Exercise packaged application checks
+      - name: Exercise the installer
         timeout-minutes: 10
-        run: node --import tsx scripts/run-smokes.mts
+        run: node --import tsx scripts/install-smoke.mts
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: verification-${{ matrix.platform }}-${{ matrix.arch }}
+          name: verification-packaging-${{ matrix.platform }}-${{ matrix.arch }}
           path: test-results/
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
