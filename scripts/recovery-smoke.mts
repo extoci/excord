@@ -124,6 +124,7 @@ async function launch(safe: boolean) {
       ...(process.platform === "linux"
         ? ["--no-sandbox", "--disable-gpu"]
         : []),
+      `--user-data-dir=${join(profile, "chromium")}`,
       archive,
       ...(safe ? ["--safe-mode"] : []),
     ],

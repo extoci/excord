@@ -36,7 +36,7 @@ const deadline = setTimeout(() => {
 }, 180000);
 deadline.unref();
 const application = await _electron.launch({ executablePath: require("electron"),
-    args: [...(process.platform === "linux" ? ["--no-sandbox", "--disable-gpu", ...(process.argv.includes("--headless") ? ["--ozone-platform=headless"] : [])] : []), resolve(process.env.EXCORD_SMOKE_APP ?? (process.argv.includes("--packaged") ? packagedApp : "."))],
+    args: [...(process.platform === "linux" ? ["--no-sandbox", "--disable-gpu", ...(process.argv.includes("--headless") ? ["--ozone-platform=headless"] : [])] : []), `--user-data-dir=${join(profile, "chromium")}`, resolve(process.env.EXCORD_SMOKE_APP ?? (process.argv.includes("--packaged") ? packagedApp : "."))],
     env: environment, timeout: 30000 });
 console.log("[smoke] Electron launched");
 stopHungApplication = () => { application.process().kill(); };
