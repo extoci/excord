@@ -125,7 +125,7 @@ async function launch(phase: string) {
   await rm(marker, { force: true });
   await run(
     executable,
-    [],
+    [`--user-data-dir=${join(profile, "chromium")}`],
     {
       ...process.env,
       EXCORD_USER_DATA_DIR: profile,

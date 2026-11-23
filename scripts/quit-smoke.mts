@@ -41,7 +41,7 @@ const archivePath = resolve(process.platform === "win32" ? "dist/win-unpacked/re
     : process.platform === "darwin" ? "dist/mac-arm64/Excord.app/Contents/Resources/app.asar" : "dist/linux-unpacked/resources/app.asar");
 const executable = packaged && !archive ? resolve(process.platform === "win32" ? "dist/win-unpacked/excord.exe"
     : process.platform === "darwin" ? "dist/mac-arm64/Excord.app/Contents/MacOS/excord" : "dist/linux-unpacked/excord") : require("electron");
-const args = [...(process.platform === "linux" ? ["--no-sandbox", "--disable-gpu"] : []), ...(archive ? [archivePath] : !packaged ? [resolve(".")] : [])];
+const args = [...(process.platform === "linux" ? ["--no-sandbox", "--disable-gpu"] : []), `--user-data-dir=${join(profile, "chromium")}`, ...(archive ? [archivePath] : !packaged ? [resolve(".")] : [])];
 const env = { ...process.env, EXCORD_USER_DATA_DIR: profile };
 delete env.ELECTRON_RUN_AS_NODE;
 const child = spawn(executable, args, { env, stdio: ["ignore", "pipe", "pipe"] });
