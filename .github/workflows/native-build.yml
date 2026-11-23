@@ -101,7 +101,7 @@ jobs:
           if-no-files-found: ignore
 
   smokes:
-    name: ${{ matrix.name }} smokes
+    name: ${{ matrix.name }} smokes (${{ matrix.suite }})
     strategy:
       fail-fast: false
       matrix:
@@ -110,10 +110,26 @@ jobs:
             runner: macos-26
             platform: mac
             arch: arm64
+            suite: core
+            checks: electron-dev,electron-packaged,power-subframe
+          - name: macOS Apple silicon
+            runner: macos-26
+            platform: mac
+            arch: arm64
+            suite: lifecycle
+            checks: shutdown-archive,shutdown-packaged,recovery,recovery-repeat
           - name: Windows x64
             runner: windows-2025
             platform: win
             arch: x64
+            suite: core
+            checks: electron-dev,electron-packaged,power-subframe
+          - name: Windows x64
+            runner: windows-2025
+            platform: win
+            arch: x64
+            suite: lifecycle
+            checks: shutdown-archive,shutdown-packaged,recovery,recovery-repeat
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 25
     env:
@@ -159,6 +175,7 @@ jobs:
       - name: Exercise the packaged application archive
         run: bun run check:package
       - uses: actions/upload-artifact@v4
+        if: matrix.suite == 'core'
         with:
           name: debug-symbols-${{ matrix.platform }}-${{ matrix.arch }}
           path: |
@@ -178,13 +195,13 @@ jobs:
       - name: Exercise packaged application checks
         timeout-minutes: 10
         env:
-          EXCORD_SMOKE_SKIP: installer-persistence
+          EXCORD_SMOKE_ONLY: ${{ matrix.checks }}
           EXCORD_SMOKE_CONCURRENCY: "4"
         run: node --import tsx scripts/run-smokes.mts
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: smokes-${{ matrix.platform }}-${{ matrix.arch }}
+          name: smokes-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.suite }}
           path: test-results/
           if-no-files-found: ignore
 
