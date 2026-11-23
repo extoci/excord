@@ -17,10 +17,16 @@ export const PORTABLE =
     !process.execPath.toLowerCase().endsWith("electron.exe") &&
     !existsSync(join(excordDir, "Uninstall Excord.exe"));
 
-export const DATA_DIR =
-    process.env.EXCORD_USER_DATA_DIR || process.env.EQUICORD_USER_DATA_DIR || (PORTABLE ? join(excordDir, "Data") : join(app.getPath("userData")));
+const customDataDir = process.env.EXCORD_USER_DATA_DIR || process.env.EQUICORD_USER_DATA_DIR;
+
+export const DATA_DIR = customDataDir || (PORTABLE ? join(excordDir, "Data") : join(app.getPath("userData")));
 
 mkdirSync(DATA_DIR, { recursive: true });
+
+// Relocating userData moves Chromium's singleton lock with it, so overridden
+// instances do not see each other as "already running". This also keeps
+// GPU caches and crash dumps inside the override dir.
+if (customDataDir) app.setPath("userData", DATA_DIR);
 
 export const SESSION_DATA_DIR = join(DATA_DIR, "sessionData");
 app.setPath("sessionData", SESSION_DATA_DIR);
