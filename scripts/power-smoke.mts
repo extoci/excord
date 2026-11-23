@@ -353,7 +353,7 @@ try {
         });
       } catch {}
     } else child.kill();
-  }, 10000);
+  }, 30000);
   try {
     await Promise.race([application.close(), exited]);
     await exited;

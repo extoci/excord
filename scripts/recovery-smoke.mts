@@ -100,7 +100,7 @@ async function close(application: ElectronApplication, name: string) {
       finishTimeout();
     }, 5000);
     void exited.then(finishTimeout);
-  }, 10000);
+  }, 30000);
   try {
     await Promise.race([Promise.all([application.close(), exited]), timedOut]);
   } finally {

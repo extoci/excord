@@ -272,7 +272,7 @@ try {
             try { execFileSync("taskkill", ["/pid", String(application.process().pid), "/T", "/F"], { timeout: 5000 }); }
             catch { /* The process may have exited while diagnostics were being collected. */ }
         } else application.process().kill();
-    }, 10000);
+    }, 30000);
     shutdown.unref();
     await application.close().catch(() => {});
     console.log("[smoke] Electron closed");
