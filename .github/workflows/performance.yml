@@ -41,6 +41,24 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.4.0"
+      - name: Restore Bun install cache
+        id: cache-bun
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-install-${{ hashFiles('candidate/bun.lock', 'baseline/bun.lock') }}
+      - name: Restore Electron packaging cache
+        id: cache-electron
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+            ~/Library/Caches/electron
+            ~/Library/Caches/electron-builder
+            ~\AppData\Local\electron\Cache
+            ~\AppData\Local\electron-builder\Cache
+          key: ${{ runner.os }}-${{ matrix.artifact }}-electron-builder-${{ hashFiles('candidate/package.json') }}
       - run: bun install --frozen-lockfile
         working-directory: baseline
       - run: bun run build
@@ -66,3 +84,21 @@ jobs:
             candidate/test-results/performance.json
             candidate/test-results/patcher-performance.json
           if-no-files-found: error
+      - name: Save Bun install cache
+        if: always() && steps.cache-bun.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-install-${{ hashFiles('candidate/bun.lock', 'baseline/bun.lock') }}
+      - name: Save Electron packaging cache
+        if: always() && steps.cache-electron.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+            ~/Library/Caches/electron
+            ~/Library/Caches/electron-builder
+            ~\AppData\Local\electron\Cache
+            ~\AppData\Local\electron-builder\Cache
+          key: ${{ runner.os }}-${{ matrix.artifact }}-electron-builder-${{ hashFiles('candidate/package.json') }}
