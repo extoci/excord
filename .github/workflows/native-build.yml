@@ -91,8 +91,14 @@ jobs:
       - name: Exercise the RPC worker
         run: bun run test:rpc
       - name: Build installer and archive
-        if: matrix.platform != 'mac' || !inputs.sign_macos
-        run: bun x electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --publish never
+        # Development artifacts are verified and thrown away, so they do not
+        # need maximum compression. The macOS ZIP alone spent ~6 minutes at
+        # compression: maximum. Release builds keep package.json settings.
+        if: !inputs.sign_macos
+        run: bun x electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --publish never -c.compression=normal -c.win.compression=store
+      - name: Build release Windows installer and archive
+        if: matrix.platform == 'win' && inputs.sign_macos
+        run: bun x electron-builder --win --x64 --publish never
       - name: Build signed Mac release installer and archive
         if: matrix.platform == 'mac' && inputs.sign_macos
         env:
