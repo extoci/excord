@@ -5,13 +5,13 @@ import { spawn } from "node:child_process";
 // state. Output is buffered per check and flushed on completion so the CI log
 // stays grouped instead of interleaved.
 
-type Check = { name: string; script: string; args?: string[]; timeoutMs?: number; retries?: number };
+type Check = { name: string; script: string; args?: string[]; timeoutMs?: number; retries?: number; serial?: boolean };
 
 const CHECKS: Check[] = [
-    // The Windows-packaged executable is the one check that crashes under
-    // parallel load (dies mid-refresh); it passes sequentially and on other
-    // platforms, so it gets one retry to tell a real break from contention.
-    { name: "shutdown-packaged", script: "scripts/quit-smoke.mts", args: ["--packaged", "--refresh"], retries: 1 },
+    // The Windows-packaged executable crashes under parallel load (dies
+    // mid-refresh); it passes when run alone and on other platforms, so it
+    // runs after the parallel pool drains instead of competing for resources.
+    { name: "shutdown-packaged", script: "scripts/quit-smoke.mts", args: ["--packaged", "--refresh"], retries: 1, serial: true },
     { name: "shutdown-archive", script: "scripts/quit-smoke.mts", args: ["--archive", "--refresh"] },
     { name: "installer-persistence", script: "scripts/install-smoke.mts", timeoutMs: 7 * 60_000 },
     { name: "electron-dev", script: "scripts/electron-smoke.mts", timeoutMs: 5 * 60_000 },
@@ -61,17 +61,26 @@ function run(check: Check): Promise<Result> {
 }
 
 const results: Result[] = [];
-const pending = [...CHECKS];
+const pending = CHECKS.filter((check) => !check.serial);
 const running = new Set<Promise<Result>>();
 
 while (pending.length > 0 || running.size > 0) {
     while (pending.length > 0 && running.size < concurrency) {
         const check = pending.shift()!;
-            const promise = retry(check);
+        const promise = retry(check);
         running.add(promise);
         void promise.then(() => running.delete(promise));
     }
     const result = await Promise.race(running);
+    results.push(result);
+    console.log(`\n===== ${result.name} (${(result.durationMs / 1000).toFixed(1)}s) =====`);
+    process.stdout.write(result.output.endsWith("\n") ? result.output : result.output + "\n");
+    if (result.forced) console.log(`[${result.name}] Timed out`);
+    if (result.code !== 0 || result.forced) console.log(`[${result.name}] FAILED with code ${result.code}`);
+}
+
+for (const check of CHECKS.filter((check) => check.serial)) {
+    const result = await retry(check);
     results.push(result);
     console.log(`\n===== ${result.name} (${(result.durationMs / 1000).toFixed(1)}s) =====`);
     process.stdout.write(result.output.endsWith("\n") ? result.output : result.output + "\n");
