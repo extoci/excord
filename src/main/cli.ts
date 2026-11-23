@@ -345,6 +345,11 @@ function checkForSecondInstance() {
     if (checkCommandLineForToggleCommands()) return;
     if (checkCommandLineForQueryCommands()) return;
 
+    // An instance with an overridden data dir is deliberately separate
+    // (e.g. parallel smoke checks); the Chromium singleton lock is keyed on
+    // the shared default userData dir and would collide across them.
+    if (process.env.EXCORD_USER_DATA_DIR || process.env.EQUICORD_USER_DATA_DIR) return;
+
     if (!app.requestSingleInstanceLock({ IS_DEV })) {
         if (!IS_DEV) {
             console.log("Excord is already running. Quitting...");
