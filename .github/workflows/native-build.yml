@@ -94,7 +94,7 @@ jobs:
         # Development artifacts are verified and thrown away, so they do not
         # need maximum compression. The macOS ZIP alone spent ~6 minutes at
         # compression: maximum. Release builds keep package.json settings.
-        if: !inputs.sign_macos
+        if: ${{ !inputs.sign_macos }}
         run: bun x electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --publish never -c.compression=normal -c.win.compression=store
       - name: Build release Windows installer and archive
         if: matrix.platform == 'win' && inputs.sign_macos
@@ -130,30 +130,12 @@ jobs:
             static/runtime/modules.json
           if-no-files-found: error
           retention-days: 14
-      - name: Verify shutdown without an inspector
-        timeout-minutes: 2
-        run: node --import tsx scripts/quit-smoke.mts --packaged --refresh
-      - name: Verify archive shutdown without an inspector
-        timeout-minutes: 2
-        run: node --import tsx scripts/quit-smoke.mts --archive --refresh
-      - name: Verify installer, reinstallation, and session persistence
-        timeout-minutes: 7
-        run: node --import tsx scripts/install-smoke.mts
-      - name: Exercise local plugins in Electron
-        timeout-minutes: 5
-        run: bun run test:electron
-      - name: Exercise local plugins from the packaged archive
-        timeout-minutes: 5
-        run: bun run test:electron --packaged
-      - name: Verify safe mode, offline recovery, and private diagnostics
-        timeout-minutes: 4
-        run: node --import tsx scripts/recovery-smoke.mts
-      - name: Repeat profile reuse and recovery checks
-        timeout-minutes: 4
-        run: node --import tsx scripts/recovery-smoke.mts
-      - name: Verify hidden efficiency, real WebRTC, and subframe isolation
-        timeout-minutes: 3
-        run: node --import tsx scripts/power-smoke.mts --packaged
+      # The packaged checks are independent: each spawns its own Electron
+      # instance under a unique EXCORD_USER_DATA_DIR. run-smokes.mts runs them
+      # three at a time and reports a summary; EXCORD_SMOKE_CONCURRENCY tunes it.
+      - name: Exercise packaged application checks
+        timeout-minutes: 10
+        run: node --import tsx scripts/run-smokes.mts
       - uses: actions/upload-artifact@v4
         if: always()
         with:
