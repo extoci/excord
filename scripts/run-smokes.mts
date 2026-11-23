@@ -62,10 +62,12 @@ function run(check: Check): Promise<Result> {
     });
 }
 
-// Jobs that run a subset of the checks (e.g. the installer check lives in the
-// packaging job) name the ones to skip via EXCORD_SMOKE_SKIP.
-const skip = new Set((process.env.EXCORD_SMOKE_SKIP ?? "").split(",").map((name) => name.trim()).filter(Boolean));
-const enabled = CHECKS.filter((check) => !skip.has(check.name));
+// Jobs that run a subset of the checks name them via EXCORD_SMOKE_ONLY
+// (whitelist) or EXCORD_SMOKE_SKIP (blacklist); ONLY wins when both are set.
+const names = (value?: string) => new Set((value ?? "").split(",").map((name) => name.trim()).filter(Boolean));
+const only = names(process.env.EXCORD_SMOKE_ONLY);
+const skip = names(process.env.EXCORD_SMOKE_SKIP);
+const enabled = CHECKS.filter((check) => (only.size > 0 ? only.has(check.name) : !skip.has(check.name)));
 
 const results: Result[] = [];
 const pending = enabled.filter((check) => !check.serial);
