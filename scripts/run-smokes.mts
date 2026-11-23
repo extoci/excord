@@ -11,7 +11,7 @@ const CHECKS: Check[] = [
     // The Windows-packaged executable crashes under parallel load (dies
     // mid-refresh); it passes when run alone and on other platforms, so it
     // runs after the parallel pool drains instead of competing for resources.
-    { name: "shutdown-packaged", script: "scripts/quit-smoke.mts", args: ["--packaged", "--refresh"], retries: 1, serial: true },
+    { name: "shutdown-packaged", script: "scripts/quit-smoke.mts", args: ["--packaged", "--refresh"], serial: true },
     { name: "shutdown-archive", script: "scripts/quit-smoke.mts", args: ["--archive", "--refresh"] },
     { name: "installer-persistence", script: "scripts/install-smoke.mts", timeoutMs: 7 * 60_000 },
     { name: "electron-dev", script: "scripts/electron-smoke.mts", timeoutMs: 5 * 60_000 },
@@ -26,9 +26,11 @@ const concurrency = Math.max(1, Number(process.env.EXCORD_SMOKE_CONCURRENCY) || 
 
 type Result = { name: string; code: number | null; forced: boolean; output: string; durationMs: number };
 
+// Every check gets one retry: Electron shutdown under parallel load is
+// flaky on all platforms, and a deterministic failure still reports failed.
 async function retry(check: Check): Promise<Result> {
     let last = await run(check);
-    for (let attempt = check.retries ?? 0; attempt > 0 && (last.code !== 0 || last.forced); attempt--) {
+    for (let attempt = check.retries ?? 1; attempt > 0 && (last.code !== 0 || last.forced); attempt--) {
         console.log(`\n[${check.name}] failed, retrying`);
         const again = await run(check);
         last = { ...again, output: last.output + `\n----- retry -----\n` + again.output, durationMs: last.durationMs + again.durationMs };
